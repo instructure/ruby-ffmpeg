@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'logger'
@@ -25,7 +27,8 @@ module FFMPEG
   # @return [Logger]
   def self.logger
     return @logger if @logger
-    logger = Logger.new(STDOUT)
+
+    logger = Logger.new($stdout)
     logger.level = Logger::INFO
     @logger = logger
   end
@@ -37,9 +40,8 @@ module FFMPEG
   # @return [String] the path you set
   # @raise Errno::ENOENT if the ffmpeg binary cannot be found
   def self.ffmpeg_binary=(bin)
-    if bin.is_a?(String) && !File.executable?(bin)
-      raise Errno::ENOENT, "the ffmpeg binary, \'#{bin}\', is not executable"
-    end
+    raise Errno::ENOENT, "the ffmpeg binary, '#{bin}', is not executable" if bin.is_a?(String) && !File.executable?(bin)
+
     @ffmpeg_binary = bin
   end
 
@@ -67,8 +69,9 @@ module FFMPEG
   # @raise Errno::ENOENT if the ffprobe binary cannot be found
   def self.ffprobe_binary=(bin)
     if bin.is_a?(String) && !File.executable?(bin)
-      raise Errno::ENOENT, "the ffprobe binary, \'#{bin}\', is not executable"
+      raise Errno::ENOENT, "the ffprobe binary, '#{bin}', is not executable"
     end
+
     @ffprobe_binary = bin
   end
 
@@ -84,10 +87,11 @@ module FFMPEG
   # @param [Integer] the maximum number of retries
   # @return [Integer] the number of retries you set
   # @raise Errno::ENOENT if the value is negative or not an Integer
-  def self.max_http_redirect_attempts=(v)
-    raise Errno::ENOENT, 'max_http_redirect_attempts must be an integer' if v && !v.is_a?(Integer)
-    raise Errno::ENOENT, 'max_http_redirect_attempts may not be negative' if v && v < 0
-    @max_http_redirect_attempts = v
+  def self.max_http_redirect_attempts=(value)
+    raise Errno::ENOENT, 'max_http_redirect_attempts must be an integer' if value && !value.is_a?(Integer)
+    raise Errno::ENOENT, 'max_http_redirect_attempts may not be negative' if value&.negative?
+
+    @max_http_redirect_attempts = value
   end
 
   # Cross-platform way of finding an executable in the $PATH.
@@ -97,12 +101,11 @@ module FFMPEG
   def self.which(cmd)
     exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
     ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
-      exts.each { |ext|
+      exts.each do |ext|
         exe = File.join(path, "#{cmd}#{ext}")
         return exe if File.executable? exe
-      }
+      end
     end
-    raise Errno::ENOENT, "the #{cmd} binary could not be found in #{ENV['PATH']}"
+    raise Errno::ENOENT, "the #{cmd} binary could not be found in #{ENV.fetch('PATH', nil)}"
   end
-
 end
