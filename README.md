@@ -6,7 +6,7 @@ Simple yet powerful wrapper around the ffmpeg command for reading metadata and t
 
 ### Ruby
 
-Only guaranteed to work with Ruby 2.6 or later.
+Only guaranteed to work with Ruby 2.7 or later.
 
 ### ffmpeg
 
