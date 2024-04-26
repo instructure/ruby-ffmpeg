@@ -4,6 +4,6 @@ module FFMPEG
   class Error < StandardError
   end
 
-  class HTTPTooManyRequests < StandardError
+  class HTTPTooManyRedirects < StandardError
   end
 end

@@ -4,32 +4,32 @@ require_relative '../spec_helper'
 
 module FFMPEG
   describe Transcoder do
-    let(:movie) { Movie.new("#{fixture_path}/movies/awesome movie.mov") }
+    let(:media) { Media.new("#{fixture_path}/movies/awesome_movie.mov") }
 
     describe '#initialize' do
-      let(:output_file) { tmp_file(ext: 'flv') }
+      let(:output_path) { tmp_file(ext: 'flv') }
 
       it 'should accept EncodingOptions as options' do
         expect do
-          described_class.new(movie, output_file, EncodingOptions.new)
+          described_class.new(media, output_path, EncodingOptions.new)
         end.not_to raise_error
       end
 
       it 'should accept Hash as options' do
         expect do
-          described_class.new(movie, output_file, { video_codec: 'libx264' })
+          described_class.new(media, output_path, { video_codec: 'libx264' })
         end.not_to raise_error
       end
 
       it 'should accept Array as options' do
         expect do
-          described_class.new(movie, output_file, %w[-vcodec libx264])
+          described_class.new(media, output_path, %w[-vcodec libx264])
         end.not_to raise_error
       end
 
       it 'should not accept anything else as options' do
         expect do
-          described_class.new(movie, output_file, 'string?')
+          described_class.new(media, output_path, 'string?')
         end.to raise_error(ArgumentError, /Unknown options format/)
       end
     end
@@ -39,21 +39,21 @@ module FFMPEG
         allow(FFMPEG.logger).to receive(:info)
       end
 
-      let(:input) { movie }
+      let(:input) { media }
       let(:output_ext) { 'mp4' }
-      let(:output_file) { tmp_file(ext: output_ext) }
+      let(:output_path) { tmp_file(ext: output_ext) }
       let(:options) { nil }
       let(:kwargs) { nil }
 
       subject do
         if options.nil? && kwargs.nil?
-          described_class.new(input, output_file)
+          described_class.new(input, output_path)
         elsif options.nil?
-          described_class.new(input, output_file, **kwargs)
+          described_class.new(input, output_path, **kwargs)
         elsif kwargs.nil?
-          described_class.new(input, output_file, options)
+          described_class.new(input, output_path, options)
         else
-          described_class.new(input, output_file, options, **kwargs)
+          described_class.new(input, output_path, options, **kwargs)
         end
       end
 
@@ -91,8 +91,8 @@ module FFMPEG
         after { Transcoder.timeout = 30 }
 
         it 'should still work with NTSC target' do
-          encoded = subject.run
-          expect(encoded.resolution).to eq('352x240')
+          result = subject.run
+          expect(result.resolution).to eq('352x240')
         end
       end
 
@@ -100,10 +100,10 @@ module FFMPEG
         reports = []
         subject.run { |progress| reports << progress }
 
-        expect(subject.encoded).to be_valid
+        expect(subject.result).to be_valid
         expect(reports).to include(0.0, 1.0)
         expect(reports.length).to be >= 3
-        expect(File.exist?(output_file)).to be_truthy
+        expect(File.exist?(output_path)).to be_truthy
       end
 
       context 'with full set of encoding options' do
@@ -113,33 +113,33 @@ module FFMPEG
         end
 
         it 'should transcode the input' do
-          encoded = subject.run
+          result = subject.run
 
-          expect(encoded.video_bitrate).to be_within(90_000).of(300_000)
-          expect(encoded.video_codec).to match(/h264/)
-          expect(encoded.resolution).to eq('320x240')
-          expect(encoded.frame_rate).to eq(10.0)
-          expect(encoded.audio_bitrate).to be_within(2000).of(32_000)
-          expect(encoded.audio_codec).to match(/mp3/)
-          expect(encoded.audio_sample_rate).to eq(22_050)
-          expect(encoded.audio_channels).to eq(1)
-          expect(File.exist?(output_file)).to be_truthy
+          expect(result.video_bitrate).to be_within(90_000).of(300_000)
+          expect(result.video_codec_name).to match(/h264/)
+          expect(result.resolution).to eq('320x240')
+          expect(result.frame_rate).to eq(10.0)
+          expect(result.audio_bitrate).to be_within(2000).of(32_000)
+          expect(result.audio_codec_name).to match(/mp3/)
+          expect(result.audio_sample_rate).to eq(22_050)
+          expect(result.audio_channels).to eq(1)
+          expect(File.exist?(output_path)).to be_truthy
         end
       end
 
       context 'with audio only' do
-        let(:movie) { Movie.new("#{fixture_path}/sounds/hello.wav") }
+        let(:media) { Media.new("#{fixture_path}/sounds/hello.wav") }
         let(:output_ext) { 'mp3' }
         let(:options) { { audio_codec: 'libmp3lame', input_options: %w[-qscale:a 2] } }
 
         it 'should transcode the input' do
-          encoded = subject.run
+          result = subject.run
 
-          expect(encoded.video_codec).to be_nil
-          expect(encoded.audio_codec).to match(/mp3/)
-          expect(encoded.audio_sample_rate).to eq(44_100)
-          expect(encoded.audio_channels).to eq(1)
-          expect(File.exist?(output_file)).to be_truthy
+          expect(result.video_codec_name).to be_nil
+          expect(result.audio_codec_name).to match(/mp3/)
+          expect(result.audio_sample_rate).to eq(44_100)
+          expect(result.audio_channels).to eq(1)
+          expect(File.exist?(output_path)).to be_truthy
         end
 
         context 'when ffmpeg freezes' do
@@ -160,14 +160,14 @@ module FFMPEG
       end
 
       context 'with aspect ratio preservation' do
-        let(:movie) { Movie.new("#{fixture_path}/movies/awesome_widescreen.mov") }
+        let(:media) { Media.new("#{fixture_path}/movies/widescreen_movie.mov") }
         let(:options) { { resolution: '320x240' } }
         let(:kwargs) { { preserve_aspect_ratio: :width } }
 
         context 'set to width' do
           it 'should transcode to the correct resolution' do
-            encoded = subject.run
-            expect(encoded.resolution).to eq('320x180')
+            result = subject.run
+            expect(result.resolution).to eq('320x180')
           end
         end
 
@@ -175,21 +175,21 @@ module FFMPEG
           let(:kwargs) { { preserve_aspect_ratio: :height } }
 
           it 'should transcode to the correct resolution' do
-            encoded = subject.run
-            expect(encoded.resolution).to eq('426x240')
+            result = subject.run
+            expect(result.resolution).to eq('426x240')
           end
         end
 
         it 'should use the specified resolution when if the original aspect ratio is undeterminable' do
-          expect(movie).to receive(:calculated_aspect_ratio).and_return(nil)
-          encoded = subject.run
-          expect(encoded.resolution).to eq('320x240')
+          expect(media.video).to receive(:calculated_aspect_ratio).and_return(nil)
+          result = subject.run
+          expect(result.resolution).to eq('320x240')
         end
 
         it 'should round to resolutions divisible by 2' do
-          expect(movie).to receive(:calculated_aspect_ratio).at_least(:once).and_return(1.234)
-          encoded = subject.run
-          expect(encoded.resolution).to eq('320x260') # 320 / 1.234 should at first be rounded to 259
+          expect(media.video).to receive(:calculated_aspect_ratio).at_least(:once).and_return(1.234)
+          result = subject.run
+          expect(result.resolution).to eq('320x260') # 320 / 1.234 should at first be rounded to 259
         end
       end
 
@@ -197,14 +197,14 @@ module FFMPEG
         let(:options) { %w[-s 300x200 -ac 2] }
 
         it 'should transcode the input' do
-          encoded = subject.run
-          expect(encoded.resolution).to eq('300x200')
-          expect(encoded.audio_channels).to eq(2)
+          result = subject.run
+          expect(result.resolution).to eq('300x200')
+          expect(result.audio_channels).to eq(2)
         end
       end
 
       context 'with input file that contains single quote' do
-        let(:movie) { Movie.new("#{fixture_path}/movies/awesome'movie.mov") }
+        let(:media) { Media.new("#{fixture_path}/movies/awesome'movie.mov") }
 
         it 'should not fail' do
           expect { subject.run }.not_to raise_error
@@ -212,9 +212,9 @@ module FFMPEG
       end
 
       context 'with output file that contains single quote' do
-        let(:output_file) { "#{tmp_path}/output with 'quote.flv" }
+        let(:output_path) { "#{tmp_path}/output with 'quote.flv" }
 
-        before { FileUtils.rm_f(output_file) }
+        before { FileUtils.rm_f(output_path) }
 
         it 'should not fail' do
           expect { subject.run }.not_to raise_error
@@ -222,9 +222,9 @@ module FFMPEG
       end
 
       context 'with output file that contains ISO-8859-1 characters' do
-        let(:output_file) { "#{tmp_path}/saløndethé.flv" }
+        let(:output_path) { "#{tmp_path}/saløndethé.flv" }
 
-        before { FileUtils.rm_f(output_file) }
+        before { FileUtils.rm_f(output_path) }
 
         it 'should not fail' do
           expect { subject.run }.not_to raise_error
@@ -232,7 +232,7 @@ module FFMPEG
       end
 
       context 'with invalid movie input' do
-        let(:movie) { Movie.new(__FILE__) }
+        let(:media) { Media.new(__FILE__) }
 
         it 'should fail' do
           expect { subject.run }.to raise_error(FFMPEG::Error, /no output file created/)
@@ -243,21 +243,21 @@ module FFMPEG
         let(:options) { { duration: 2 } }
 
         it 'should transcode correctly' do
-          encoded = subject.run
-          expect(encoded.duration).to be >= 1.8
-          expect(encoded.duration).to be <= 2.2
+          result = subject.run
+          expect(result.duration).to be >= 1.8
+          expect(result.duration).to be <= 2.2
         end
       end
 
       context 'with remote URL as input' do
-        let(:movie) { Movie.new('http://127.0.0.1:8000/awesome%20movie.mov') }
+        let(:media) { Media.new('http://127.0.0.1:8000/awesome_movie.mov') }
 
         before(:context) { start_web_server }
         after(:context) { stop_web_server }
 
         it 'should transcode correctly' do
           expect { subject.run }.not_to raise_error
-          expect(File.exist?(output_file)).to be_truthy
+          expect(File.exist?(output_path)).to be_truthy
         end
       end
 
@@ -266,20 +266,20 @@ module FFMPEG
         let(:options) { { screenshot: true, seek_time: 3 } }
 
         it 'should produce the correct ffmpeg command' do
-          expect(subject.command.join(' ')).to include("-ss 3 -i #{subject.input_file}")
+          expect(subject.command.join(' ')).to include("-ss 3 -i #{subject.input_path}")
         end
 
         it 'should transcode to the original resolution by default' do
-          encoded = subject.run
-          expect(encoded.resolution).to eq('640x480')
+          result = subject.run
+          expect(result.resolution).to eq('640x480')
         end
 
         context 'and explicitly set resolution' do
           let(:options) { { screenshot: true, seek_time: 3, resolution: '400x200' } }
 
           it 'should transcode to the specified resolution' do
-            encoded = subject.run
-            expect(encoded.resolution).to eq('400x200')
+            result = subject.run
+            expect(result.resolution).to eq('400x200')
           end
         end
 
@@ -288,13 +288,13 @@ module FFMPEG
           let(:kwargs) { { preserve_aspect_ratio: :width } }
 
           it 'should transcode to the correct resolution' do
-            encoded = subject.run
-            expect(encoded.resolution).to eq('320x240')
+            result = subject.run
+            expect(result.resolution).to eq('320x240')
           end
         end
 
         describe 'for multiple screenshots' do
-          let(:output_file) { "#{tmp_path}/screenshots_%d.png" }
+          let(:output_path) { "#{tmp_path}/screenshots_%d.png" }
           let(:options) { { screenshot: true, seek_time: 4, resolution: '320x500' } }
           let(:kwargs) { { preserve_aspect_ratio: :width } }
 
@@ -320,14 +320,14 @@ module FFMPEG
           let(:kwargs) { { input_options: %w[-re] } }
 
           it 'should produce the correct ffmpeg command' do
-            expect(subject.command.join(' ')).to include("-re -ss 3 -i #{subject.input_file}")
+            expect(subject.command.join(' ')).to include("-re -ss 3 -i #{subject.input_path}")
           end
 
           context 'that already define -ss' do
             let(:kwargs) { { input_options: %w[-ss 5 -re] } }
 
             it 'should overwrite the -ss value' do
-              expect(subject.command.join(' ')).to include("-ss 3 -re -i #{subject.input_file}")
+              expect(subject.command.join(' ')).to include("-ss 3 -re -i #{subject.input_path}")
             end
           end
         end
@@ -347,12 +347,12 @@ module FFMPEG
         before { allow(subject).to receive(:execute) }
 
         it 'should not validate the output file' do
-          expect(subject).to_not receive(:validate_output_file)
+          expect(subject).to_not receive(:validate_output_path)
           subject.run
         end
 
-        it 'should not return a Movie object' do
-          expect(subject).to_not receive(:encoded)
+        it 'should not return a Media object' do
+          expect(subject).to_not receive(:result)
           expect(subject.run).to eq(nil)
         end
       end
@@ -370,7 +370,7 @@ module FFMPEG
           let(:kwargs) { { input_options: %w[-framerate 1/5 -re] } }
 
           it 'should produce the correct ffmpeg command' do
-            expect(subject.command.join(' ')).to include("-framerate 1/5 -re -i #{subject.input_file}")
+            expect(subject.command.join(' ')).to include("-framerate 1/5 -re -i #{subject.input_path}")
           end
         end
 
@@ -378,7 +378,7 @@ module FFMPEG
           let(:kwargs) { { input_options: { framerate: '1/5' } } }
 
           it 'should produce the correct ffmpeg command' do
-            expect(subject.command.join(' ')).to include("-framerate 1/5 -i #{subject.input_file}")
+            expect(subject.command.join(' ')).to include("-framerate 1/5 -i #{subject.input_path}")
           end
         end
       end
@@ -392,8 +392,8 @@ module FFMPEG
         end
 
         it 'should produce a slideshow' do
-          encoded = subject.run
-          expect(encoded.duration).to eq(25)
+          result = subject.run
+          expect(result.duration).to eq(25)
         end
 
         context 'and files where the file extension does not match the file type' do

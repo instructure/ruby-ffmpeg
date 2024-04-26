@@ -3,15 +3,22 @@
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'logger'
-require 'stringio'
 
-require 'ffmpeg/version'
-require 'ffmpeg/errors'
-require 'ffmpeg/movie'
-require 'ffmpeg/io_monkey'
-require 'ffmpeg/transcoder'
-require 'ffmpeg/encoding_options'
+require_relative 'ffmpeg/version'
+require_relative 'ffmpeg/encoding_options'
+require_relative 'ffmpeg/errors'
+require_relative 'ffmpeg/io'
+require_relative 'ffmpeg/media'
+require_relative 'ffmpeg/stream'
+require_relative 'ffmpeg/transcoder'
+require_relative 'ffmpeg/utils'
 
+# The FFMPEG module allows you to customise the behaviour of the FFMPEG library.
+#
+# @example
+#   FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg'
+#   FFMPEG.ffprobe_binary = '/usr/local/bin/ffprobe'
+#   FFMPEG.logger = Logger.new(STDOUT)
 module FFMPEG
   # FFMPEG logs information about its progress when it's transcoding.
   # Jack in your own logger through this method if you wish to.

@@ -13,7 +13,7 @@ warn <<~OUTPUT
     libswscale      2.  1.100 /  2.  1.100
     libswresample   0. 15.100 /  0. 15.100
     libpostproc    52.  0.100 / 52.  0.100
-  Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'spec/fixtures/movies/awesome_widescreen.mov':
+  Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'spec/fixtures/movies/widescreen_movie.mov':
     Metadata:
       major_brand     : isom
       minor_version   : 512

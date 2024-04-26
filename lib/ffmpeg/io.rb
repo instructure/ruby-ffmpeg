@@ -12,9 +12,7 @@ if RUBY_PLATFORM =~ /(win|w)(32|64)$/
   end
 end
 
-#
-# Monkey Patch timeout support into the IO class
-#
+# Monkey Patch timeout support into the IO class...
 class IO
   def each_with_timeout(pid, seconds, separator = $INPUT_RECORD_SEPARATOR)
     last_tick = Time.now

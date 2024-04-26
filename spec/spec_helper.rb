@@ -18,24 +18,12 @@ RSpec.configure do |config|
   config.run_all_when_everything_filtered = true
 
   config.before(:each) do
-    stub_request(:head, /redirect-example.com/)
+    stub_request(:head, 'http://127.0.0.1:8000/moved/awesome_movie.mov')
       .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
-      .to_return(status: 302, headers: {
-                   location: 'http://127.0.0.1:8000/awesome%20movie.mov'
-                 })
-    stub_request(:head, 'http://127.0.0.1:8000/deep_path/awesome%20movie.mov')
-      .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
-      .to_return(status: 302, headers: {
-                   location: '/awesome%20movie.mov'
-                 })
-    stub_request(:head, 'http://127.0.0.1:8000/awesome%20movie.mov?fail=1')
+      .to_return(status: 302, headers: { location: '/awesome_movie.mov' })
+    stub_request(:head, 'http://127.0.0.1:8000/notfound/awesome_movie.mov')
       .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
       .to_return(status: 404, headers: {})
-    stub_request(:head, /toomany-redirects-example/)
-      .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
-      .to_return(status: 302, headers: {
-                   location: '/awesome%20movie.mov'
-                 })
   end
 
   config.after(:suite) do

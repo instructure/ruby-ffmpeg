@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module FFMPEG
+  # Encoding options for the ffmpeg command
+  # in the form of a hash.
   class EncodingOptions < Hash
     def initialize(options = {})
       super(nil)
