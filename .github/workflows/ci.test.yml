@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         ruby-version: ['2.6', '2.7', '3.0']
-        ffmpeg-version: ['6.0.1', '5.1.1', '4.4.1', '3.4.2']
+        ffmpeg-version: ['6.0.1', '5.1.1', '4.4.1']
 
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
+          wget https://johnvansickle.com/ffmpeg/old-releases/ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
           tar -xf ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
           sudo mv ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static/ffmpeg /usr/local/bin/ffmpeg
           sudo mv ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static/ffprobe /usr/local/bin/ffprobe
