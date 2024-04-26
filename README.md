@@ -6,15 +6,13 @@ Simple yet powerful wrapper around the ffmpeg command for reading metadata and t
 
 ### Ruby
 
-Only guaranteed to work with MRI Ruby 1.9.3 or later.
-Should work with rubinius head in 1.9 mode.
-Will not work in jruby until they fix: http://goo.gl/Z4UcX (should work in the upcoming 1.7.5)
+Only guaranteed to work with Ruby 2.6 or later.
 
 ### ffmpeg
 
-The current gem is tested against ffmpeg 2.8.4. So no guarantees with earlier (or much later) 
+The current gem is tested against ffmpeg 4, 5 and 6. So no guarantees with earlier (or much later) 
 versions. Output and input standards have inconveniently changed rather a lot between versions 
-of ffmpeg. My goal is to keep this library in sync with new versions of ffmpeg as they come along.
+of ffmpeg. Our goal is to keep this library in sync with new versions of ffmpeg as they come along.
 
 On macOS: `brew install ffmpeg`.
 
