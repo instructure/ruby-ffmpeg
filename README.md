@@ -1,5 +1,8 @@
 # FFMPEG
 
+[![Test](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.test.yml/badge.svg?event=push)](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.test.yml)
+[![Lint](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.lint.yml/badge.svg?event=push)](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.lint.yml)
+
 Simple yet powerful wrapper around the ffmpeg command for reading metadata and transcoding movies.
 
 ## Compatibility
