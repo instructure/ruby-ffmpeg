@@ -24,6 +24,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
+          rubygems: latest
 
       - name: Install FFMPEG
         run: |

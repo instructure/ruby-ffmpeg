@@ -20,6 +20,7 @@ jobs:
         with:
           ruby-version: '3.0'
           bundler-cache: true
+          rubygems: latest
 
       - name: Run RuboCop
         run: bundle exec rubocop
