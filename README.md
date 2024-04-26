@@ -170,7 +170,7 @@ media.screenshot('path/to/new_screenshot.jpg')
 The screenshot method has the very same API as transcode so the same options will work.
 
 ```ruby
-media.screenshot('path/to/new_screenshot.bmp', seek_time: 5, resolution: '320x240')
+media.screenshot('path/to/new_screenshot.bmp', { seek_time: 5, resolution: '320x240' })
 ```
 
 To generate multiple screenshots in a single pass, specify `vframes` and a wildcard filename. Make
@@ -184,7 +184,7 @@ To specify the quality when generating compressed screenshots (.jpg), use `quali
 ffmpeg `-v:q` option. Quality is an integer between 1 and 31, where lower is better quality:
 
 ```ruby
-media.screenshot('path/to/new_screenshot_%d.jpg', quality: 3)
+media.screenshot('path/to/new_screenshot_%d.jpg', { quality: 3 })
 ```
 
 You can preserve aspect ratio the same way as when using transcode.
