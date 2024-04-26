@@ -1,6 +1,11 @@
-== Master
+== 4.0.0 2024-04-27
 
-Current with 3.0.2
+Breaking Changes:
+* FFMPEG::Movie was renamed to FFMPEG::Media to better reflect the fact that it can handle both audio and video files
+* FFMPEG::Stream was introduced to handle the streams within a media file
+* Some FFMPEG::Media methods were renamed or removed to better reflect the new structure
+* FFMPEG::Transcoder now requires encoding options to be passed
+* FFMPEG::Transcoder now expects the formerly called transcoder_options to be passed as keyword arguments
 
 == 3.0.2 2016-11-18
 
