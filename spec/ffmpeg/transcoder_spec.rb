@@ -42,15 +42,11 @@ module FFMPEG
       let(:input) { media }
       let(:output_ext) { 'mp4' }
       let(:output_path) { tmp_file(ext: output_ext) }
-      let(:options) { nil }
+      let(:options) { EncodingOptions.new }
       let(:kwargs) { nil }
 
       subject do
-        if options.nil? && kwargs.nil?
-          described_class.new(input, output_path)
-        elsif options.nil?
-          described_class.new(input, output_path, **kwargs)
-        elsif kwargs.nil?
+        if kwargs.nil?
           described_class.new(input, output_path, options)
         else
           described_class.new(input, output_path, options, **kwargs)

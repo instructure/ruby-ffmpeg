@@ -17,7 +17,7 @@ module FFMPEG
     def initialize(
       input,
       output_path,
-      options = EncodingOptions.new,
+      options,
       validate: true,
       preserve_aspect_ratio: true,
       input_options: []
