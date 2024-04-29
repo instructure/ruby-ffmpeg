@@ -83,7 +83,7 @@ module FFMPEG
         let(:output_ext) { 'mpg' }
         let(:options) { { target: 'ntsc-vcd' } }
 
-        before { Transcoder.timeout = false }
+        before { Transcoder.timeout = nil }
         after { Transcoder.timeout = 30 }
 
         it 'should still work with NTSC target' do
@@ -141,7 +141,7 @@ module FFMPEG
         context 'when ffmpeg freezes' do
           before do
             Transcoder.timeout = 1
-            FFMPEG.ffmpeg_binary = "#{fixture_path}/bin/ffmpeg-audio-only"
+            FFMPEG.ffmpeg_binary = "#{fixture_path}/bin/ffmpeg-audio-hanging"
           end
 
           after do
@@ -150,7 +150,7 @@ module FFMPEG
           end
 
           it 'should fail when the timeout is exceeded' do
-            expect { subject.run }.to raise_error(FFMPEG::Error, /Errors: no output file created/)
+            expect { subject.run }.to raise_error(FFMPEG::Error, /Process hung/)
           end
         end
       end

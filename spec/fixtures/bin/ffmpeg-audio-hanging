@@ -54,10 +54,8 @@ if ARGV.length > 2 # looks like we're trying to transcode
     Stream #0:1 -> #0:0 (aac -> libmp3lame)
   Press [q] to stop, [?] for help
   OUTPUT
-  3.times do
-    $stderr.write "size=   51953kB time=02:27:46.48 bitrate=  48.0kbits/s\r"
-    sleep 0.5
-  end
+  $stderr.write "size=   51953kB time=02:27:46.48 bitrate=  48.0kbits/s\r"
+  loop { sleep 1 }
 else
   warn 'At least one output file must be specified'
 end

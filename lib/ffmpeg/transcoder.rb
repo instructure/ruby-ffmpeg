@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require 'open3'
+require 'timeout'
 
 module FFMPEG
   # The Transcoder class is responsible for transcoding multimedia files.
   # It accepts a Media object or a path to a multimedia file as input.
   class Transcoder
-    attr_reader :command, :output, :errors, :input_path, :output_path
+    attr_reader :args, :output, :errors, :input_path, :output_path
 
     @timeout = 30
 
@@ -53,7 +53,11 @@ module FFMPEG
       prepare_resolution
       prepare_screenshot
 
-      @command = [FFMPEG.ffmpeg_binary, '-y', *@input_options, '-i', @input_path, *@options.to_a, @output_path]
+      @args = ['-y', *@input_options, '-i', @input_path, *@options.to_a, @output_path]
+    end
+
+    def command
+      [FFMPEG.ffmpeg_binary, *@args]
     end
 
     def run(&block)
@@ -139,44 +143,36 @@ module FFMPEG
       end
     end
 
-    # frame= 4855 fps= 46 q=31.0 size=   45306kB time=00:02:42.28 bitrate=2287.0kbits/
     def execute
       FFMPEG.logger.info("Running transcoding...\n#{@command}\n")
 
       @output = String.new
 
-      Open3.popen3(*@command) do |_stdin, _stdout, stderr, wait_thr|
+      FFMPEG.ffmpeg_popen3(*@args) do |_stdin, stdout, stderr, wait_thr|
         yield(0.0) if block_given?
 
-        handler = proc do |line|
-          Utils.force_iso8859(line)
-          @output << line
-
-          if line.include?('time=')
-            time = if line =~ /time=(\d+):(\d+):(\d+.\d+)/ # ffmpeg 0.8 and above style
-                     (Regexp.last_match(1).to_i * 3600) +
-                       (Regexp.last_match(2).to_i * 60) +
-                       Regexp.last_match(3).to_f
-                   else # better make sure it wont blow up in case of unexpected output
-                     0.0
-                   end
-
-            if @media
-              progress = time / @media.duration
-              yield(progress) if block_given?
-            end
-          end
+        if timeout
+          stdout.timeout = timeout
+          stderr.timeout = timeout
         end
 
-        if timeout
-          stderr.each_with_timeout(wait_thr.pid, timeout, 'size=', &handler)
-        else
-          stderr.each('size=', &handler)
+        stderr.each do |line|
+          @output << line
+
+          next unless @media
+          next unless block_given?
+          next unless line =~ /time=(\d+):(\d+):(\d+.\d+)/ # time=00:02:42.28
+
+          time = (::Regexp.last_match(1).to_i * 3600) +
+                 (::Regexp.last_match(2).to_i * 60) +
+                 ::Regexp.last_match(3).to_f
+          yield(time / @media.duration)
         end
 
         @errors << 'ffmpeg returned non-zero exit code' unless wait_thr.value.success?
       rescue Timeout::Error
-        FFMPEG.logger.error "Process hung...\n@command\n#{@command}\nOutput\n#{@output}\n"
+        Process.kill(FFMPEG::SIGKILL, wait_thr.pid)
+        FFMPEG.logger.error "Process hung...\n#{@command}\nOutput\n#{@output}\n"
         raise Error, "Process hung. Full output: #{@output}"
       end
     end

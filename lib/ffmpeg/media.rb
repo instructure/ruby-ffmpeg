@@ -2,6 +2,7 @@
 
 require 'multi_json'
 require 'net/http'
+require 'uri'
 
 module FFMPEG
   # The Media class represents a multimedia file and provides methods
@@ -18,7 +19,7 @@ module FFMPEG
 
       # Check if the file exists and get its size
       if remote?
-        response = Utils.fetch_http_head(path)
+        response = FFMPEG.fetch_http_head(path)
 
         unless response.is_a?(Net::HTTPSuccess)
           raise Errno::ENOENT, "the URL '#{path}' does not exist or is not available (response code: #{response.code})"
@@ -32,11 +33,10 @@ module FFMPEG
       end
 
       # Run ffprobe to get the streams and format
-      command = [FFMPEG.ffprobe_binary, '-i', path,
-                 '-print_format', 'json', '-show_format', '-show_streams', '-show_error']
-      stdout, stderr, _status = Open3.capture3(*command)
-      Utils.force_iso8859(stdout)
-      Utils.force_iso8859(stderr)
+      stdout, stderr, _status = FFMPEG.ffprobe_capture3(
+        '-i', path, '-print_format', 'json',
+        '-show_format', '-show_streams', '-show_error'
+      )
 
       # Parse ffprobe metadata
       begin

@@ -3,39 +3,65 @@
 require 'English'
 require 'timeout'
 
-if RUBY_PLATFORM =~ /(win|w)(32|64)$/
-  begin
-    require 'win32/process'
-  rescue LoadError
-    'Warning: ffmpeg is missing the win32-process gem to properly handle hung transcodings. ' \
-    'Install the gem (in Gemfile if using bundler) to avoid errors.'
-  end
-end
+module FFMPEG
+  # The IO class is a simple wrapper around IO objects that adds a timeout
+  # to all read operations and fixes encoding issues.
+  class IO
+    attr_accessor :timeout
 
-# Monkey Patch timeout support into the IO class...
-class IO
-  def each_with_timeout(pid, seconds, separator = $INPUT_RECORD_SEPARATOR)
-    last_tick = Time.now
-    current_thr = Thread.current
-    timeout_thr = Thread.new do
-      loop do
-        sleep 0.1
-        current_thr.raise Timeout::Error.new('output wait time expired') if last_tick - Time.now < -seconds
+    def self.force_encoding(chunk)
+      chunk[/test/]
+    rescue ArgumentError
+      chunk.force_encoding('ISO-8859-1')
+    end
+
+    def initialize(target)
+      @target = target
+    end
+
+    %i[
+      getc
+      gets
+      readchar
+      readline
+    ].each do |symbol|
+      define_method(symbol) do |*args|
+        Timeout.timeout(timeout) do
+          output = @target.send(symbol, *args)
+          self.class.force_encoding(output)
+          output
+        end
       end
     end
 
-    each(separator) do |buffer|
-      last_tick = Time.now
-      yield buffer
+    %i[
+      each
+      each_char
+      each_line
+    ].each do |symbol|
+      read = symbol == :each_char ? :getc : :gets
+      define_method(symbol) do |*args, &block|
+        until eof?
+          output = send(read, *args)
+          block.call(output)
+        end
+      end
     end
-  rescue Timeout::Error
-    if RUBY_PLATFORM =~ /(win|w)(32|64)$/
-      Process.kill(1, pid)
-    else
-      Process.kill('SIGKILL', pid)
+
+    def readlines(*args)
+      lines = []
+      lines << gets(*args) until eof?
+      lines
     end
-    raise
-  ensure
-    timeout_thr.kill
+
+    private
+
+    def respond_to_missing?(symbol, include_private = false)
+      @target.respond_to?(symbol, include_private)
+    end
+
+    def method_missing(symbol, *args)
+      @target.send(symbol, *args)
+    end
   end
 end

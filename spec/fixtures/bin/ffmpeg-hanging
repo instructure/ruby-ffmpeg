@@ -38,8 +38,8 @@ if ARGV.length > 2 # looks like we're trying to transcode
     Stream #0:1 -> #0:1 (aac -> libfaac)
   Press [q] to stop, [?] for help
   OUTPUT
-  warn 'frame=   72 fps=0.0 q=32766.0 Lsize=     115kB time=00:00:07.00 bitrate= 134.6kbits/s'
-  loop { sleep 1 } # omg hang!
+  $stderr.write 'frame=   72 fps=0.0 q=32766.0 Lsize=     115kB time=00:00:07.00 bitrate= 134.6kbits/s'
+  loop { sleep 1 }
 else
   warn 'At least one output file must be specified'
 end
