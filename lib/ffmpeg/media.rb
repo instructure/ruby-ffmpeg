@@ -262,7 +262,7 @@ module FFMPEG
       end
 
       options = options.merge(seek_time: from)
-      transcoder(output_path, options, **kwargs).run
+      transcode(output_path, options, **kwargs)
     end
   end
 end

@@ -3,7 +3,7 @@ inherit_from: .rubocop_todo.yml
 AllCops:
   NewCops: enable
   SuggestExtensions: false
-  TargetRubyVersion: 2.7
+  TargetRubyVersion: 3.0
 
 Metrics/AbcSize:
   Enabled: false
@@ -30,6 +30,9 @@ Metrics/ParameterLists:
   Enabled: false
 
 Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+Style/ArgumentsForwarding:
   Enabled: false
 
 Style/FloatDivision:

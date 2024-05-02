@@ -1,3 +1,21 @@
+== 5.0.0 2024-05-02
+
+Breaking Changes:
+* Dropped support for Ruby 2.x
+
+== 4.2.0 2024-05-02
+
+Improvements:
+* Added new methods to cut `FFMPEG::Media#cut` and concat `FFMPEG::Media.concat` media
+* Added new API to deal with filters
+* Added `FFMPEG::Filters::SilenceDetect` to detect silence in audio streams
+* Added `FFMPEG::Filters::Grayscale` as a sample filter
+
+== 4.1.0 2024-04-29
+
+Improvements:
+* Added new `(ffmpeg|ffprobe)_(capture3|popen3)` methods to the `FFMPEG` module to allow custom calls to the ffmpeg and ffprobe binaries
+
 == 4.0.0 2024-04-27
 
 Breaking Changes:
