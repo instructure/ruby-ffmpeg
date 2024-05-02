@@ -400,6 +400,23 @@ module FFMPEG
           end
         end
       end
+
+      context 'with filters' do
+        let(:kwargs) { { filters: [Filters::SilenceDetect.new(threshold: '-30dB', duration: 1, mono: true)] } }
+
+        it 'should produce the correct ffmpeg command' do
+          expect(subject.command.join(' ')).to include('-af silencedetect=n=-30dB:d=1:m')
+        end
+
+        it 'should transcode correctly' do
+          result = subject.run
+          expect(result).to be_a(FFMPEG::Media)
+
+          ranges = Filters::SilenceDetect.scan(subject.output)
+          expect(ranges.length).to eq(2)
+          expect(ranges.all?(Filters::SilenceDetect::Range)).to be_truthy
+        end
+      end
     end
   end
 end

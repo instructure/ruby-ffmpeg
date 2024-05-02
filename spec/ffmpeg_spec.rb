@@ -86,11 +86,11 @@ describe FFMPEG do
     end
 
     it 'should be an Integer' do
-      expect { FFMPEG.max_http_redirect_attempts = 1.23 }.to raise_error(Errno::ENOENT)
+      expect { FFMPEG.max_http_redirect_attempts = 1.23 }.to raise_error(ArgumentError)
     end
 
     it 'should not be negative' do
-      expect { FFMPEG.max_http_redirect_attempts = -1 }.to raise_error(Errno::ENOENT)
+      expect { FFMPEG.max_http_redirect_attempts = -1 }.to raise_error(ArgumentError)
     end
 
     it 'should be assignable' do

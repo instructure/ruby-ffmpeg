@@ -43,10 +43,11 @@ def read_fixture_file(filename)
   File.read(File.join(fixture_path, filename))
 end
 
-def tmp_file(filename: nil, ext: nil)
+def tmp_file(filename: nil, basename: nil, ext: nil)
   if filename.nil?
     filename = RSpec.current_example.metadata[:description].downcase.gsub(/[^\w]/, '_')
     filename += "_#{('a'..'z').to_a.sample(8).join}"
+    filename += "_#{basename}" if basename
     filename += ".#{ext}" if ext
   end
 

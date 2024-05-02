@@ -276,33 +276,110 @@ module FFMPEG
       end
     end
 
+    describe '#transcoder' do
+      let(:output_path) { tmp_file(ext: 'mov') }
+
+      it 'returns a transcoder for the media' do
+        transcoder = subject.transcoder(output_path, { custom: %w[-vcodec libx264] })
+        expect(transcoder).to be_a(Transcoder)
+        expect(transcoder.input_path).to eq(subject.path)
+        expect(transcoder.output_path).to eq(output_path)
+        expect(transcoder.command.join(' ')).to include('-vcodec libx264')
+      end
+    end
+
     describe '#transcode' do
-      let(:options) { { custom: '-vcodec libx264' } }
+      let(:output_path) { tmp_file(ext: 'mov') }
+      let(:options) { { custom: %w[-vcodec libx264] } }
       let(:kwargs) { { preserve_aspect_ratio: :width } }
 
       it 'should run the transcoder' do
         transcoder_double = double(Transcoder)
         expect(Transcoder).to receive(:new)
-          .with(subject, "#{tmp_path}/awesome.flv", options, **kwargs)
+          .with(subject, output_path, options, **kwargs)
           .and_return(transcoder_double)
         expect(transcoder_double).to receive(:run)
 
-        subject.transcode("#{tmp_path}/awesome.flv", options, **kwargs)
+        subject.transcode(output_path, options, **kwargs)
       end
     end
 
     describe '#screenshot' do
+      let(:output_path) { tmp_file(ext: 'jpg') }
       let(:options) { { seek_time: 2, dimensions: '640x480' } }
       let(:kwargs) { { preserve_aspect_ratio: :width } }
 
       it 'should run the transcoder with screenshot option' do
         transcoder_double = double(Transcoder)
         expect(Transcoder).to receive(:new)
-          .with(subject, "#{tmp_path}/awesome.jpg", options.merge(screenshot: true), **kwargs)
+          .with(subject, output_path, options.merge(screenshot: true), **kwargs)
           .and_return(transcoder_double)
         expect(transcoder_double).to receive(:run)
 
-        subject.screenshot("#{tmp_path}/awesome.jpg", options, **kwargs)
+        subject.screenshot(output_path, options, **kwargs)
+      end
+    end
+
+    describe '#cut' do
+      let(:output_path) { tmp_file(ext: 'mov') }
+      let(:options) { { custom: %w[-vcodec libx264] } }
+
+      context 'with no input options' do
+        it 'should run the transcoder to cut the media' do
+          expected_kwargs = { input_options: %w[-to 4] }
+          transcoder_double = double(Transcoder)
+          expect(Transcoder).to receive(:new)
+            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
+            .and_return(transcoder_double)
+          expect(transcoder_double).to receive(:run)
+
+          subject.cut(output_path, 2, 4, options)
+        end
+      end
+
+      context 'with input options as a string array' do
+        let(:kwargs) { { input_options: %w[-ss 999] } }
+
+        it 'should run the transcoder to cut the media' do
+          expected_kwargs = kwargs.merge({ input_options: kwargs[:input_options] + %w[-to 4] })
+          transcoder_double = double(Transcoder)
+          expect(Transcoder).to receive(:new)
+            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
+            .and_return(transcoder_double)
+          expect(transcoder_double).to receive(:run)
+
+          subject.cut(output_path, 2, 4, options, **kwargs)
+        end
+      end
+
+      context 'with input options as a hash' do
+        let(:kwargs) { { input_options: { ss: 999 } } }
+
+        it 'should run the transcoder to cut the media' do
+          expected_kwargs = kwargs.merge({ input_options: kwargs[:input_options].merge({ to: 4 }) })
+          transcoder_double = double(Transcoder)
+          expect(Transcoder).to receive(:new)
+            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
+            .and_return(transcoder_double)
+          expect(transcoder_double).to receive(:run)
+
+          subject.cut(output_path, 2, 4, options, **kwargs)
+        end
+      end
+    end
+
+    describe '.concat' do
+      let(:output_path) { tmp_file(ext: 'mov') }
+      let(:segment1_path) { tmp_file(basename: 'segment1', ext: 'mov') }
+      let(:segment2_path) { tmp_file(basename: 'segment2', ext: 'mov') }
+
+      it 'should run the transcoder to concatenate the segments' do
+        segment1 = subject.cut(segment1_path, 1, 3)
+        segment2 = subject.cut(segment2_path, 4, subject.duration)
+        result = described_class.concat(output_path, segment1, segment2)
+        expect(result).to be_a(Media)
+        expect(result.path).to eq(output_path)
+        expect(result.duration).to be_within(0.2).of(5.5)
       end
     end
   end

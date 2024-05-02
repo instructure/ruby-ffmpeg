@@ -20,7 +20,8 @@ module FFMPEG
       options,
       validate: true,
       preserve_aspect_ratio: true,
-      input_options: []
+      input_options: [],
+      filters: []
     )
       if input.is_a?(Media)
         @media = input
@@ -34,6 +35,7 @@ module FFMPEG
       @validate = validate
       @preserve_aspect_ratio = preserve_aspect_ratio
       @input_options = input_options
+      @filters = filters
       @errors = []
 
       if @input_options.is_a?(Hash)
@@ -51,9 +53,11 @@ module FFMPEG
       end
 
       prepare_resolution
-      prepare_screenshot
+      prepare_seek_time
 
-      @args = ['-y', *@input_options, '-i', @input_path, *@options.to_a, @output_path]
+      @args = ['-y', *@input_options, '-i', @input_path,
+               *@options.to_a, *@filters.map(&:to_a).flatten,
+               @output_path]
     end
 
     def command
@@ -104,19 +108,19 @@ module FFMPEG
       end
     end
 
-    def prepare_screenshot
-      # Moves any screenshot seek_time to an 'ss' custom arg
+    def prepare_seek_time
+      # Moves any seek_time to an 'ss' input option
 
       seek_time = ''
 
       if @options.is_a?(Array)
-        index = @options.find_index('-seek_time') unless @options.find_index('-screenshot').nil?
+        index = @options.find_index('-ss')
         unless index.nil?
-          @options.delete_at(index) # delete 'seek_time'
+          @options.delete_at(index) # delete 'ss'
           seek_time = @options.delete_at(index + 1).to_s # fetch the seek value
         end
       else
-        seek_time = @options.delete(:seek_time).to_s unless @options[:screenshot].nil?
+        seek_time = @options.delete(:seek_time).to_s
       end
 
       return if seek_time.to_s == ''
@@ -138,13 +142,13 @@ module FFMPEG
         FFMPEG.logger.info "Transcoding of #{@input_path} to #{@output_path} succeeded\n"
       else
         errors = "Errors: #{@errors.join(', ')}. "
-        FFMPEG.logger.error "Failed encoding...\n#{@command}\n\n#{@output}\n#{errors}\n"
+        FFMPEG.logger.error "Failed encoding...\n#{command.join(' ')}\n\n#{@output}\n#{errors}\n"
         raise Error, "Failed encoding. #{errors}Full output: #{@output}"
       end
     end
 
     def execute
-      FFMPEG.logger.info("Running transcoding...\n#{@command}\n")
+      FFMPEG.logger.info("Running transcoding...\n#{command.join(' ')}\n")
 
       @output = String.new
 
@@ -172,7 +176,7 @@ module FFMPEG
         @errors << 'ffmpeg returned non-zero exit code' unless wait_thr.value.success?
       rescue Timeout::Error
         Process.kill(FFMPEG::SIGKILL, wait_thr.pid)
-        FFMPEG.logger.error "Process hung...\n#{@command}\nOutput\n#{@output}\n"
+        FFMPEG.logger.error "Process hung...\n#{command.join(' ')}\nOutput\n#{@output}\n"
         raise Error, "Process hung. Full output: #{@output}"
       end
     end
