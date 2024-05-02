@@ -243,13 +243,13 @@ module FFMPEG
       Transcoder.new(self, output_path, options, **kwargs)
     end
 
-    def transcode(output_path, options = EncodingOptions.new, **kwargs)
-      transcoder(output_path, options, **kwargs).run { |progress| yield progress if block_given? }
+    def transcode(output_path, options = EncodingOptions.new, **kwargs, &block)
+      transcoder(output_path, options, **kwargs).run(&block)
     end
 
-    def screenshot(output_path, options = EncodingOptions.new, **kwargs)
+    def screenshot(output_path, options = EncodingOptions.new, **kwargs, &block)
       options = options.merge(screenshot: true)
-      transcode(output_path, options, **kwargs) { |progress| yield progress if block_given? }
+      transcode(output_path, options, **kwargs, &block)
     end
 
     def cut(output_path, from, to, options = EncodingOptions.new, **kwargs)
@@ -262,7 +262,7 @@ module FFMPEG
       end
 
       options = options.merge(seek_time: from)
-      transcode(output_path, options, **kwargs)
+      transcoder(output_path, options, **kwargs).run
     end
   end
 end
