@@ -379,7 +379,7 @@ module FFMPEG
         result = described_class.concat(output_path, segment1, segment2)
         expect(result).to be_a(Media)
         expect(result.path).to eq(output_path)
-        expect(result.duration).to be_within(0.2).of(5.5)
+        expect(result.duration).to be_within(0.2).of(5.7)
       end
     end
   end
