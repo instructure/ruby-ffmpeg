@@ -239,6 +239,19 @@ module FFMPEG
       audio&.first&.tags
     end
 
+    def transcoder(output_path, options, **kwargs)
+      Transcoder.new(self, output_path, options, **kwargs)
+    end
+
+    def transcode(output_path, options = EncodingOptions.new, **kwargs)
+      transcoder(output_path, options, **kwargs).run { |progress| yield progress if block_given? }
+    end
+
+    def screenshot(output_path, options = EncodingOptions.new, **kwargs)
+      options = options.merge(screenshot: true)
+      transcode(output_path, options, **kwargs) { |progress| yield progress if block_given? }
+    end
+
     def cut(output_path, from, to, options = EncodingOptions.new, **kwargs)
       kwargs[:input_options] ||= []
       if kwargs[:input_options].is_a?(Array)
@@ -250,19 +263,6 @@ module FFMPEG
 
       options = options.merge(seek_time: from)
       transcode(output_path, options, **kwargs)
-    end
-
-    def transcoder(output_path, options = EncodingOptions.new, **kwargs)
-      Transcoder.new(self, output_path, options, **kwargs)
-    end
-
-    def transcode(output_path, options = EncodingOptions.new, **kwargs, &block)
-      transcoder(output_path, options, **kwargs).run(&block)
-    end
-
-    def screenshot(output_path, options = EncodingOptions.new, **kwargs, &block)
-      options = options.merge(screenshot: true)
-      transcode(output_path, options, **kwargs, &block)
     end
   end
 end
