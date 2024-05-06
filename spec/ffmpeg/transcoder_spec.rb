@@ -66,7 +66,7 @@ module FFMPEG
 
         it 'should fail when the timeout is exceeded' do
           expect(FFMPEG.logger).to receive(:error)
-          expect { subject.run }.to raise_error(FFMPEG::Error, /Process hung/)
+          expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed, process hung/)
         end
       end
 
@@ -150,7 +150,7 @@ module FFMPEG
           end
 
           it 'should fail when the timeout is exceeded' do
-            expect { subject.run }.to raise_error(FFMPEG::Error, /Process hung/)
+            expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed, process hung/)
           end
         end
       end
@@ -298,7 +298,7 @@ module FFMPEG
             it 'should fail' do
               expect do
                 subject.run
-              end.to raise_error(FFMPEG::Error, /Failed encoding/)
+              end.to raise_error(FFMPEG::Error, /Transcoding .+ failed/)
             end
           end
 

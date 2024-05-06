@@ -139,16 +139,26 @@ module FFMPEG
 
       if succeeded?
         yield(1.0) if block_given?
-        FFMPEG.logger.info "Transcoding of #{@input_path} to #{@output_path} succeeded\n"
+        FFMPEG.logger.info(self.class) do
+          "Transcoding #{@input_path} to #{@output_path} succeeded\n" \
+            "Command: #{command.join(' ')}\n" \
+            "Output: #{@output}"
+        end
       else
-        errors = "Errors: #{@errors.join(', ')}. "
-        FFMPEG.logger.error "Failed encoding...\n#{command.join(' ')}\n\n#{@output}\n#{errors}\n"
-        raise Error, "Failed encoding. #{errors}Full output: #{@output}"
+        message = "Transcoding #{@input_path} to #{@output_path} failed\n" \
+                  "Command: #{command.join(' ')}\n" \
+                  "Errors: #{@errors.join(', ')}\n " \
+                  "Output: #{@output}\n"
+        FFMPEG.logger.error(self.class) { message }
+        raise Error, message
       end
     end
 
     def execute
-      FFMPEG.logger.info("Running transcoding...\n#{command.join(' ')}\n")
+      FFMPEG.logger.info(self.class) do
+        "Transcoding #{@input_path} to #{@output_path}...\n" \
+          "Command: #{command.join(' ')}"
+      end
 
       @output = String.new
 
@@ -175,9 +185,12 @@ module FFMPEG
 
         @errors << 'ffmpeg returned non-zero exit code' unless wait_thr.value.success?
       rescue Timeout::Error
+        message = "Transcoding #{@input_path} to #{@output_path} failed, process hung\n" \
+                  "Command: #{command.join(' ')}\n" \
+                  "Output: #{@output}"
         Process.kill(FFMPEG::SIGKILL, wait_thr.pid)
-        FFMPEG.logger.error "Process hung...\n#{command.join(' ')}\nOutput\n#{@output}\n"
-        raise Error, "Process hung. Full output: #{@output}"
+        FFMPEG.logger.error(self.class) { message }
+        raise Error, message
       end
     end
   end
