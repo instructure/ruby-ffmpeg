@@ -1,3 +1,15 @@
+== 6.0.0 2024-06-05
+
+Breaking Changes:
+* Changed FFMPEG::IO to use UTF-8 encoding instead of ISO-8859-1 by default
+* Changed FFMPEG::Transcoder#run to raise FFMPEG::Error if FFMPEG exits with non-zero exit code even if validate was set to false on the transcoder
+* Removed the errors attribute of FFMPEG::Transcoder
+
+Improvements:
+* Changed FFMPEG::IO to handle carriage returns by FFMPEG – progress reports will be more frequent and more reliable
+* Changed FFMPEG::Transcoder to report progress only on whole percentages by default (e.g.: 0.01, 0.2 etc.)
+* Added new progress_digits kwarg to FFMPEG::Transcoder to allow more frequent progress updates
+
 == 5.0.0 2024-05-02
 
 Breaking Changes:
