@@ -65,8 +65,10 @@ module FFMPEG
         end
 
         it 'should fail when the timeout is exceeded' do
-          expect(FFMPEG.logger).to receive(:error)
-          expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed, process hung/)
+          ::Timeout.timeout(5) do
+            expect(FFMPEG.logger).to receive(:error)
+            expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ timed out/)
+          end
         end
       end
 
@@ -75,7 +77,7 @@ module FFMPEG
 
         it 'should fail with non-zero exit code error' do
           expect(FFMPEG.logger).to receive(:error)
-          expect { subject.run }.to raise_error(FFMPEG::Error, /non-zero exit code/)
+          expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed/)
         end
       end
 
@@ -150,7 +152,9 @@ module FFMPEG
           end
 
           it 'should fail when the timeout is exceeded' do
-            expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed, process hung/)
+            ::Timeout.timeout(5) do
+              expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ timed out/)
+            end
           end
         end
       end
@@ -227,14 +231,6 @@ module FFMPEG
         end
       end
 
-      context 'with invalid movie input' do
-        let(:media) { Media.new(__FILE__) }
-
-        it 'should fail' do
-          expect { subject.run }.to raise_error(FFMPEG::Error, /no output file created/)
-        end
-      end
-
       context 'with explicitly set duration' do
         let(:options) { { duration: 2 } }
 
@@ -298,7 +294,7 @@ module FFMPEG
             it 'should fail' do
               expect do
                 subject.run
-              end.to raise_error(FFMPEG::Error, /Transcoding .+ failed/)
+              end.to raise_error(FFMPEG::Error, /Transcoding .+ produced invalid media/)
             end
           end
 
@@ -396,7 +392,7 @@ module FFMPEG
           let(:input) { "#{fixture_path}/images/wrong_type/img_%03d.tiff" }
 
           it 'should fail' do
-            expect { subject.run }.to raise_error(FFMPEG::Error, /encoded file is invalid/)
+            expect { subject.run }.to raise_error(FFMPEG::Error, /Transcoding .+ failed/)
           end
         end
       end

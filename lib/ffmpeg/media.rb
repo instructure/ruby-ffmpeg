@@ -47,7 +47,7 @@ module FFMPEG
 
         @size = response.content_length
       else
-        raise Errno::ENOENT, "The file at '#{@path}' does not exist" unless File.exist?(path)
+        raise Errno::ENOENT, "The file at '#{@path}' does not exist" unless File.exist?(@path)
 
         @size = File.size(@path)
       end

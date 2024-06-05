@@ -7,16 +7,45 @@ module FFMPEG
   # The IO class is a simple wrapper around IO objects that adds a timeout
   # to all read operations and fixes encoding issues.
   class IO
-    attr_accessor :timeout
+    attr_accessor :encoding, :timeout
+
+    @encoding = 'UTF-8'
+
+    class << self
+      attr_accessor :encoding
+    end
 
     def self.force_encoding(chunk)
       chunk[/test/]
     rescue ArgumentError
-      chunk.force_encoding('ISO-8859-1')
+      chunk.force_encoding(encoding)
     end
 
     def initialize(target)
       @target = target
+    end
+
+    def each(&block)
+      timer = timeout.nil? ? nil : Timeout.start(timeout)
+      buffer = String.new
+
+      until eof?
+        char = getc
+        case char
+        when "\n", "\r"
+          timer&.tick
+          timer&.pause
+          block.call(buffer)
+          timer&.resume
+          buffer = String.new
+        else
+          buffer << char
+        end
+      end
+
+      block.call(buffer) unless buffer.empty?
+    ensure
+      timer&.cancel
     end
 
     %i[
@@ -26,31 +55,32 @@ module FFMPEG
       readline
     ].each do |symbol|
       define_method(symbol) do |*args|
-        Timeout.timeout(timeout) do
-          output = @target.send(symbol, *args)
-          self.class.force_encoding(output)
-          output
-        end
+        data = @target.send(symbol, *args)
+        self.class.force_encoding(data) unless data.nil?
+        data
       end
     end
 
     %i[
-      each
       each_char
       each_line
     ].each do |symbol|
-      read = symbol == :each_char ? :getc : :gets
       define_method(symbol) do |*args, &block|
-        until eof?
-          output = send(read, *args)
-          block.call(output)
+        timer = timeout.nil? ? nil : Timeout.start(timeout)
+        @target.send(symbol, *args) do |data|
+          timer&.tick
+          timer&.pause
+          block.call(self.class.force_encoding(data))
+          timer&.resume
         end
+      ensure
+        timer&.cancel
       end
     end
 
     def readlines(*args)
       lines = []
-      lines << gets(*args) until eof?
+      each(*args) { |line| lines << line }
       lines
     end
 

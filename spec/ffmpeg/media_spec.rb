@@ -58,7 +58,7 @@ module FFMPEG
         let(:stdout) { read_fixture_file("outputs/#{stdout_fixture_file}") }
         let(:stderr) { stderr_fixture_file ? read_fixture_file("outputs/#{stderr_fixture_file}") : '' }
 
-        before { allow(Open3).to receive(:capture3).and_return([stdout, stderr, double(success?: true)]) }
+        before { allow(Open3).to receive(:capture3).and_return([stdout, stderr, double(succeeded: true)]) }
         subject { described_class.new(__FILE__) }
 
         context 'cannot be parsed' do
@@ -104,6 +104,15 @@ module FFMPEG
 
           it 'should not raise an error' do
             expect { subject }.not_to raise_error
+          end
+
+          context 'with IO encoding set to ISO-8859-1' do
+            before { FFMPEG::IO.encoding = 'ISO-8859-1' }
+            after { FFMPEG::IO.encoding = 'UTF-8' }
+
+            it 'should not raise an error' do
+              expect { subject }.not_to raise_error
+            end
           end
         end
       end
