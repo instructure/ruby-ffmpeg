@@ -6,7 +6,8 @@ module FFMPEG
   # The Transcoder class is responsible for transcoding multimedia files.
   # It accepts a Media object or a path to a multimedia file as input.
   class Transcoder
-    attr_reader :args, :output, :errors, :input_path, :output_path
+    attr_reader :args, :input_path, :output_path,
+                :output, :progress, :succeeded
 
     @timeout = 30
 
@@ -20,6 +21,7 @@ module FFMPEG
       options,
       validate: true,
       preserve_aspect_ratio: true,
+      progress_digits: 2,
       input_options: [],
       filters: []
     )
@@ -34,9 +36,9 @@ module FFMPEG
       @options = options.is_a?(Hash) ? EncodingOptions.new(options) : options
       @validate = validate
       @preserve_aspect_ratio = preserve_aspect_ratio
+      @progress_digits = progress_digits
       @input_options = input_options
       @filters = filters
-      @errors = []
 
       if @input_options.is_a?(Hash)
         @input_options = @input_options.reduce([]) do |acc, (key, value)|
@@ -66,14 +68,18 @@ module FFMPEG
 
     def run(&block)
       execute(&block)
-      return nil unless @validate
+      validate_result if @validate
+    end
 
-      validate_output_file(&block)
-      result
+    def finished?
+      !@succeeded.nil?
     end
 
     def succeeded?
-      @errors.empty?
+      return false unless @succeeded
+      return true unless @validate
+
+      result&.valid?
     end
 
     def failed?
@@ -81,6 +87,8 @@ module FFMPEG
     end
 
     def result
+      return nil unless @succeeded
+
       @result ||= Media.new(@output_path) if File.exist?(@output_path)
     end
 
@@ -133,25 +141,14 @@ module FFMPEG
       end
     end
 
-    def validate_output_file
-      @errors << 'no output file created' unless File.exist?(@output_path)
-      @errors << 'encoded file is invalid' if result.nil? || !result.valid?
+    def validate_result
+      return result if result&.valid?
 
-      if succeeded?
-        yield(1.0) if block_given?
-        FFMPEG.logger.info(self.class) do
-          "Transcoding #{@input_path} to #{@output_path} succeeded\n" \
-            "Command: #{command.join(' ')}\n" \
-            "Output: #{@output}"
-        end
-      else
-        message = "Transcoding #{@input_path} to #{@output_path} failed\n" \
-                  "Command: #{command.join(' ')}\n" \
-                  "Errors: #{@errors.join(', ')}\n " \
-                  "Output: #{@output}\n"
-        FFMPEG.logger.error(self.class) { message }
-        raise Error, message
-      end
+      message = "Transcoding #{@input_path} to #{@output_path} produced invalid media\n" \
+                "Command: #{command.join(' ')}\n" \
+                "Output: #{@output}"
+      FFMPEG.logger.error(self.class) { message }
+      raise Error, message
     end
 
     def execute
@@ -161,6 +158,8 @@ module FFMPEG
       end
 
       @output = String.new
+      @progress = 0.0
+      @succeeded = nil
 
       FFMPEG.ffmpeg_popen3(*@args) do |_stdin, stdout, stderr, wait_thr|
         yield(0.0) if block_given?
@@ -174,21 +173,42 @@ module FFMPEG
           @output << line
 
           next unless @media
-          next unless block_given?
           next unless line =~ /time=(\d+):(\d+):(\d+.\d+)/ # time=00:02:42.28
 
           time = (::Regexp.last_match(1).to_i * 3600) +
                  (::Regexp.last_match(2).to_i * 60) +
                  ::Regexp.last_match(3).to_f
-          yield(time / @media.duration)
+          progress = (time / @media.duration).round(@progress_digits)
+          next unless progress < 1.0 || progress == @progress
+
+          @progress = progress
+          yield(@progress) if block_given?
         end
 
-        @errors << 'ffmpeg returned non-zero exit code' unless wait_thr.value.success?
-      rescue Timeout::Error
-        message = "Transcoding #{@input_path} to #{@output_path} failed, process hung\n" \
+        if wait_thr.value.success?
+          @succeeded = true
+          @progress = 1.0
+          yield(@progress) if block_given?
+
+          FFMPEG.logger.info(self.class) do
+            "Transcoding #{@input_path} to #{@output_path} succeeded\n" \
+              "Command: #{command.join(' ')}\n" \
+              "Output: #{@output}"
+          end
+        else
+          @succeeded = false
+          message = "Transcoding #{@input_path} to #{@output_path} failed\n" \
+                    "Command: #{command.join(' ')}\n" \
+                    "Output: #{@output}"
+          FFMPEG.logger.error(self.class) { message }
+          raise Error, message
+        end
+      rescue ::Timeout::Error
+        @succeeded = false
+        Process.kill(FFMPEG::SIGKILL, wait_thr.pid)
+        message = "Transcoding #{@input_path} to #{@output_path} timed out\n" \
                   "Command: #{command.join(' ')}\n" \
                   "Output: #{@output}"
-        Process.kill(FFMPEG::SIGKILL, wait_thr.pid)
         FFMPEG.logger.error(self.class) { message }
         raise Error, message
       end
