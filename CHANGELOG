@@ -1,3 +1,8 @@
+== 6.0.1 2024-06-05
+
+Fixes:
+* Fixed crashes when using FFMPEG::IO with non-UTF-8 encoding (e.g.: when ffprobe or ffmpeg output contains non-UTF-8 byte sequences)
+
 == 6.0.0 2024-06-05
 
 Breaking Changes:
