@@ -7,18 +7,12 @@ module FFMPEG
   # The IO class is a simple wrapper around IO objects that adds a timeout
   # to all read operations and fixes encoding issues.
   class IO
-    attr_accessor :encoding, :timeout
+    attr_accessor :timeout
 
-    @encoding = 'UTF-8'
-
-    class << self
-      attr_accessor :encoding
-    end
-
-    def self.force_encoding(chunk)
+    def self.encode!(chunk)
       chunk[/test/]
     rescue ArgumentError
-      chunk.force_encoding(encoding)
+      chunk.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?')
     end
 
     def initialize(target)
@@ -56,7 +50,7 @@ module FFMPEG
     ].each do |symbol|
       define_method(symbol) do |*args|
         data = @target.send(symbol, *args)
-        self.class.force_encoding(data) unless data.nil?
+        self.class.encode!(data) unless data.nil?
         data
       end
     end
@@ -70,7 +64,7 @@ module FFMPEG
         @target.send(symbol, *args) do |data|
           timer&.tick
           timer&.pause
-          block.call(self.class.force_encoding(data))
+          block.call(self.class.encode!(data))
           timer&.resume
         end
       ensure

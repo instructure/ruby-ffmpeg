@@ -74,7 +74,7 @@ module FFMPEG
   # @return [String] the path to the ffmpeg binary
   # @raise Errno::ENOENT if the ffmpeg binary cannot be found
   def self.ffmpeg_binary
-    @ffmpeg_binary || which('ffmpeg')
+    @ffmpeg_binary ||= which('ffmpeg')
   end
 
   # Safely captures the standard output and the standard error of the ffmpeg command.
@@ -83,8 +83,8 @@ module FFMPEG
   # @raise [Errno::ENOENT] if the ffmpeg binary cannot be found
   def self.ffmpeg_capture3(*args)
     stdout, stderr, status = Open3.capture3(ffmpeg_binary, *args)
-    FFMPEG::IO.force_encoding(stdout)
-    FFMPEG::IO.force_encoding(stderr)
+    FFMPEG::IO.encode!(stdout)
+    FFMPEG::IO.encode!(stderr)
     [stdout, stderr, status]
   end
 
@@ -106,7 +106,7 @@ module FFMPEG
   # @return [String] the path to the ffprobe binary
   # @raise Errno::ENOENT if the ffprobe binary cannot be found
   def self.ffprobe_binary
-    @ffprobe_binary || which('ffprobe')
+    @ffprobe_binary ||= which('ffprobe')
   end
 
   # Set the path of the ffprobe binary.
@@ -129,8 +129,8 @@ module FFMPEG
   # @raise [Errno::ENOENT] if the ffprobe binary cannot be found
   def self.ffprobe_capture3(*args)
     stdout, stderr, status = Open3.capture3(ffprobe_binary, *args)
-    FFMPEG::IO.force_encoding(stdout)
-    FFMPEG::IO.force_encoding(stderr)
+    FFMPEG::IO.encode!(stdout)
+    FFMPEG::IO.encode!(stderr)
     [stdout, stderr, status]
   end
 

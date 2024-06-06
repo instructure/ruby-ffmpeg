@@ -99,20 +99,11 @@ module FFMPEG
           end
         end
 
-        context 'contains ISO-8859-1 characters' do
+        context 'contains ISO-8859-1 byte sequences' do
           let(:stdout_fixture_file) { 'ffprobe_iso8859.txt' }
 
           it 'should not raise an error' do
             expect { subject }.not_to raise_error
-          end
-
-          context 'with IO encoding set to ISO-8859-1' do
-            before { FFMPEG::IO.encoding = 'ISO-8859-1' }
-            after { FFMPEG::IO.encoding = 'UTF-8' }
-
-            it 'should not raise an error' do
-              expect { subject }.not_to raise_error
-            end
           end
         end
       end
