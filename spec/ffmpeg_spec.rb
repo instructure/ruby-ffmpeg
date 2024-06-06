@@ -4,7 +4,7 @@ require 'spec_helper'
 
 describe FFMPEG do
   describe '.logger' do
-    after(:each) do
+    after do
       FFMPEG.logger = Logger.new(nil)
     end
 
@@ -25,13 +25,18 @@ describe FFMPEG do
   end
 
   describe '.ffmpeg_binary' do
-    after(:each) do
-      FFMPEG.ffmpeg_binary = nil
+    before do
+      FFMPEG.instance_variable_set(:@ffmpeg_binary, nil)
+    end
+
+    after do
+      FFMPEG.instance_variable_set(:@ffmpeg_binary, nil)
     end
 
     it 'should default to finding from path' do
       allow(FFMPEG).to receive(:which) { '/usr/local/bin/ffmpeg' }
-      expect(FFMPEG.ffmpeg_binary).to eq FFMPEG.which('ffprobe')
+      allow(File).to receive(:executable?) { true }
+      expect(FFMPEG.ffmpeg_binary).to eq FFMPEG.which('ffmpeg')
     end
 
     it 'should be assignable' do
@@ -51,12 +56,17 @@ describe FFMPEG do
   end
 
   describe '.ffprobe_binary' do
-    after(:each) do
-      FFMPEG.ffprobe_binary = nil
+    before do
+      FFMPEG.instance_variable_set(:@ffprobe_binary, nil)
+    end
+
+    after do
+      FFMPEG.instance_variable_set(:@ffprobe_binary, nil)
     end
 
     it 'should default to finding from path' do
       allow(FFMPEG).to receive(:which) { '/usr/local/bin/ffprobe' }
+      allow(File).to receive(:executable?) { true }
       expect(FFMPEG.ffprobe_binary).to eq FFMPEG.which('ffprobe')
     end
 
@@ -77,7 +87,7 @@ describe FFMPEG do
   end
 
   describe '.max_http_redirect_attempts' do
-    after(:each) do
+    after do
       FFMPEG.max_http_redirect_attempts = nil
     end
 
