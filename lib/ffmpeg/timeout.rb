@@ -16,6 +16,7 @@ module FFMPEG
 
     def resume
       @paused = false
+      tick
     end
 
     def tick
@@ -42,12 +43,9 @@ module FFMPEG
     end
 
     def loop
-      if !@paused && Time.now - @last_tick >= @duration
-        @current_thread.raise(::Timeout::Error, @message || self.class.name)
-      else
-        sleep 0.1
-        loop
-      end
+      sleep 0.1 while @paused || Time.now - @last_tick <= @duration
+
+      @current_thread.raise(::Timeout::Error, @message || self.class.name)
     end
   end
 end
