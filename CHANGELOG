@@ -1,3 +1,8 @@
+== 6.0.2 2024-06-18
+
+Fixes:
+* Fixed a crash where extremely long media files would cause the transcoder to fail with SystemStackError: stack level too deep
+
 == 6.0.1 2024-06-05
 
 Fixes:
