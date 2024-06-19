@@ -1,3 +1,8 @@
+== 6.0.2 2024-06-19
+
+Fixes:
+* Fixed a possible race condition that would cause the transcoder to time out even if the transcoder was still running
+
 == 6.0.2 2024-06-18
 
 Fixes:
