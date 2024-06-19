@@ -11,16 +11,21 @@ module FFMPEG
     end
 
     def pause
-      @paused = true
+      @mutex.synchronize { @paused = true }
+      nil
     end
 
     def resume
-      @paused = false
-      tick
+      @mutex.synchronize do
+        @last_tick = Time.now
+        @paused = false
+        nil
+      end
     end
 
     def tick
-      @last_tick = Time.now
+      @mutex.synchronize { @last_tick = Time.now }
+      nil
     end
 
     def cancel
@@ -33,6 +38,7 @@ module FFMPEG
     private
 
     def initialize(duration, message = nil)
+      @mutex = Mutex.new
       @duration = duration
       @message = message
 
@@ -43,7 +49,7 @@ module FFMPEG
     end
 
     def loop
-      sleep 0.1 while @paused || Time.now - @last_tick <= @duration
+      sleep 0.1 while @mutex.synchronize { @paused || Time.now - @last_tick <= @duration }
 
       @current_thread.raise(::Timeout::Error, @message || self.class.name)
     end
