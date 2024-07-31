@@ -3,19 +3,20 @@
 require_relative '../../spec_helper'
 
 module FFMPEG
+  describe Filters do
+    describe '.grayscale' do
+      it 'returns a new grayscale filter' do
+        expect(described_class.grayscale.to_s).to eq('format=pix_fmts=gray')
+      end
+    end
+  end
+
   module Filters
     describe Grayscale do
-      subject { described_class.new }
-
       describe '#to_s' do
         it 'returns the filter as a string' do
-          expect(subject.to_s).to eq('format=gray')
-        end
-      end
-
-      describe '#to_a' do
-        it 'returns the filter as an array' do
-          expect(subject.to_a).to eq(['-vf', subject.to_s])
+          filter = described_class.new
+          expect(filter.to_s).to eq('format=pix_fmts=gray')
         end
       end
     end

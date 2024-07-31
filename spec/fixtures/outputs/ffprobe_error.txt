@@ -1,6 +1,0 @@
-{
-    "error": {
-        "code": 123,
-        "message": "Error"
-    }
-}

@@ -3,405 +3,627 @@
 require_relative '../spec_helper'
 
 module FFMPEG
+  # Cache the ffprobe output for testing.
+  class << self
+    alias ffprobe_raw_capture3 ffprobe_capture3
+
+    def ffprobe_capture3(*args)
+      cache_key = args.hash
+      @ffprobe_cache ||= {}
+      @ffprobe_cache[cache_key] ||= ffprobe_raw_capture3(*args)
+    end
+  end
+
   describe Media do
-    subject { described_class.new("#{fixture_path}/movies/awesome_movie.mov") }
+    let(:load) { true }
+    let(:autoload) { true }
+    let(:path) { fixture_media_file('landscape@4k60.mp4') }
+
+    subject { described_class.new(path, load:, autoload:) }
 
     before(:all) { start_web_server }
     after(:all) { stop_web_server }
 
     describe '#initialize' do
-      context 'given a non-existent local file' do
-        subject { described_class.new('i_dont_exist') }
+      context 'when load is set to false' do
+        let(:load) { false }
 
-        it 'should throw ArgumentError' do
-          expect { subject }.to raise_error(Errno::ENOENT, /does not exist/)
+        it 'does not load the media' do
+          expect_any_instance_of(described_class).not_to receive(:load!)
+          expect(subject.path).to eq(path)
+        end
+
+        it 'autoloads the media on demand' do
+          expect_any_instance_of(described_class).to receive(:load!).and_call_original
+          expect(subject.valid?).to be(true)
+          expect(subject.video_streams?).to be(true)
+        end
+
+        context 'and autoload is set to false' do
+          let(:autoload) { false }
+
+          it 'does not autoload the media on demand' do
+            expect_any_instance_of(described_class).not_to receive(:load!)
+            expect { subject.valid? }.to raise_error(RuntimeError, /media not loaded/i)
+          end
+        end
+      end
+    end
+
+    describe '#load!' do
+      let(:load) { false }
+
+      it 'loads the media once' do
+        expect(FFMPEG).to receive(:ffprobe_capture3).once.and_call_original
+        subject.load!
+        subject.load!
+      end
+
+      context 'when the file does not exist' do
+        let(:path) { fixture_media_file('missing.mp4') }
+
+        it 'raises an error' do
+          expect { subject.load! }.to raise_error(described_class::LoadError, /\bno such file or directory\b/i)
         end
       end
 
-      context 'given an unreachable remote file' do
-        subject { described_class.new('http://127.0.0.1:8000/notfound/awesome_movie.mov') }
+      context 'when the remote file does not exist' do
+        let(:path) { fixture_media_file('missing.mp4', remote: true) }
 
-        it 'should throw ArgumentError' do
-          expect { subject }.to raise_error(Errno::ENOENT, /404/)
+        it 'raises an error' do
+          expect { subject.load! }.to raise_error(described_class::LoadError, /\b404 not found\b/i)
         end
       end
 
-      context 'given a remote file with too many redirects' do
-        subject { described_class.new('http://127.0.0.1:8000/moved/awesome_movie.mov') }
-        before { FFMPEG.max_http_redirect_attempts = 0 }
-        after { FFMPEG.max_http_redirect_attempts = nil }
+      context 'when the remote file was moved' do
+        let(:path) { fixture_media_file('moved', 'landscape@4k60.mp4', remote: true) }
 
-        it 'should throw HTTPTooManyRedirects' do
-          expect { subject }.to raise_error(FFMPEG::HTTPTooManyRedirects)
+        it 'does not raise an error' do
+          expect { subject.load! }.not_to raise_error
+          expect(subject.valid?).to be(true)
         end
       end
 
-      context 'given an empty file' do
-        subject { described_class.new("#{fixture_path}/movies/empty.flv") }
+      context 'when the ffprobe output contains' do
+        context 'an error' do
+          let(:path) { fixture_media_file('broken.mp4') }
 
-        it 'should mark the media as invalid' do
-          expect(subject.valid?).to be(false)
-        end
-      end
-
-      context 'given a broken file' do
-        subject { described_class.new("#{fixture_path}/movies/broken.mp4") }
-
-        it 'should mark the media as invalid' do
-          expect(subject.valid?).to be(false)
-        end
-      end
-
-      context 'when the ffprobe output' do
-        let(:stdout_fixture_file) { nil }
-        let(:stderr_fixture_file) { nil }
-        let(:stdout) { read_fixture_file("outputs/#{stdout_fixture_file}") }
-        let(:stderr) { stderr_fixture_file ? read_fixture_file("outputs/#{stderr_fixture_file}") : '' }
-
-        before { allow(Open3).to receive(:capture3).and_return([stdout, stderr, double(succeeded: true)]) }
-        subject { described_class.new(__FILE__) }
-
-        context 'cannot be parsed' do
-          let(:stdout_fixture_file) { 'ffprobe_bad_json.txt' }
-
-          it 'should throw RuntimeError' do
-            expect { subject }.to raise_error(RuntimeError, /Could not parse output from FFProbe/)
+          it 'raises an error' do
+            expect { subject.load! }.to raise_error(described_class::LoadError, /\binvalid data found\b/i)
           end
         end
 
-        context 'contains an error' do
-          let(:stdout_fixture_file) { 'ffprobe_error.txt' }
+        context 'bad JSON' do
+          let(:stdout) { read_fixture_file('outputs', 'ffprobe-bad-json.txt') }
 
-          it 'should mark the media as invalid' do
-            expect(subject.valid?).to be(false)
-            expect(subject.streams).to be_nil
+          before { allow(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, '', nil]) }
+
+          it 'raises an error' do
+            expect { subject.load! }.to raise_error(described_class::LoadError, /\bunexpected token\b/i)
           end
         end
 
-        context 'contains only unsupported streams' do
-          let(:stdout_fixture_file) { 'ffprobe_unsupported_audio_and_video_stdout.txt' }
-          let(:stderr_fixture_file) { 'ffprobe_unsupported_audio_and_video_stderr.txt' }
+        context 'ISO-8859-1 byte sequences' do
+          let(:stdout) { read_fixture_file('outputs', 'ffprobe-iso8859.txt') }
 
-          it 'should mark the media as invalid' do
-            expect(subject.valid?).to be(false)
-            expect(subject.streams).to all(be_unsupported)
-          end
-        end
+          before { allow(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, '', nil]) }
 
-        context 'contains some unsupported streams' do
-          let(:stdout_fixture_file) { 'ffprobe_unsupported_audio_stdout.txt' }
-          let(:stderr_fixture_file) { 'ffprobe_unsupported_audio_stderr.txt' }
-
-          it 'should not mark the media as invalid' do
-            expect(subject.valid?).to be(true)
-            expect(subject.video.supported?).to be(true)
-            expect(subject.audio.first.unsupported?).to be(true)
-          end
-        end
-
-        context 'contains ISO-8859-1 byte sequences' do
-          let(:stdout_fixture_file) { 'ffprobe_iso8859.txt' }
-
-          it 'should not raise an error' do
-            expect { subject }.not_to raise_error
+          it 'does not raise and error' do
+            expect(subject.load!).to be(true)
           end
         end
       end
     end
 
     describe '#remote?' do
-      it 'should return true if the path is a remote URL' do
-        subject = described_class.new('http://127.0.0.1:8000/awesome_movie.mov')
-        expect(subject.remote?).to be(true)
-        expect(subject.local?).to be(false)
-      end
+      context 'when the media is a remote file' do
+        let(:path) { fixture_media_file('landscape@4k60.mp4', remote: true) }
 
-      it 'should return false if the path is a local file' do
-        expect(subject.remote?).to be(false)
-        expect(subject.local?).to be(true)
-      end
-    end
-
-    describe '#size' do
-      context 'when the path is a remote URL' do
-        it 'should return the content-length of the remote file' do
-          subject = described_class.new('http://127.0.0.1:8000/moved/awesome_movie.mov')
-          expect(subject.size).to eq(455_546)
+        it 'returns true' do
+          expect(subject.remote?).to be(true)
         end
       end
 
-      context 'when the path is a local file' do
-        it 'should return the size of the local file' do
-          expect(subject.size).to eq(455_546)
+      context 'when the media is a local file' do
+        it 'returns false' do
+          expect(subject.remote?).to be(false)
         end
       end
     end
 
-    describe '#video' do
-      it 'should return the first video stream' do
-        expect(subject.video).to be_a(Stream)
-        expect(subject.video.codec_type).to eq('video')
+    describe '#local?' do
+      context 'when the media is a remote file' do
+        let(:path) { fixture_media_file('landscape@4k60.mp4', remote: true) }
+
+        it 'returns false' do
+          expect(subject.local?).to be(false)
+        end
+      end
+
+      context 'when the media is a local file' do
+        it 'returns true' do
+          expect(subject.local?).to be(true)
+        end
       end
     end
 
-    describe '#video?' do
-      it 'should return true if the media has a video stream' do
-        expect(subject.video?).to be(true)
-      end
+    describe '#valid?' do
+      context 'when the media contains' do
+        context 'supported and unsupported streams' do
+          let(:stdout) { read_fixture_file('outputs', 'ffprobe-unsupported-audio-stdout.txt') }
+          let(:stderr) { read_fixture_file('outputs', 'ffprobe-unsupported-audio-stderr.txt') }
 
-      it 'should return false if the media does not have a video stream' do
-        subject = described_class.new("#{fixture_path}/sounds/hello.wav")
-        expect(subject.video?).to be(false)
-      end
-    end
+          before { expect(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, stderr, nil]) }
 
-    describe '#video_only?' do
-      it 'should return true if the media has only a video stream' do
-        subject.instance_variable_set(:@audio, [])
-        expect(subject.video_only?).to be(true)
-      end
-
-      it 'should return false if the media has audio streams' do
-        expect(subject.video_only?).to be(false)
-      end
-
-      it 'should return false if the media does not have a video stream' do
-        subject = described_class.new("#{fixture_path}/sounds/hello.wav")
-        expect(subject.video_only?).to be(false)
-      end
-    end
-
-    %i[
-      width
-      height
-      rotation
-      resolution
-      display_aspect_ratio
-      sample_aspect_ratio
-      calculated_aspect_ratio
-      calculated_pixel_aspect_ratio
-      color_range
-      color_space
-      frame_rate
-      frames
-    ].each do |method|
-      describe "##{method}" do
-        it 'should delegate to the video stream' do
-          expect(subject.video).to receive(method).and_return('foo')
-          expect(subject.send(method)).to be('foo')
+          it 'returns true' do
+            expect(subject.valid?).to be(true)
+          end
         end
 
-        next unless method == :rotation
+        context 'only unsupported streams' do
+          let(:stdout) { read_fixture_file('outputs', 'ffprobe-unsupported-audio-and-video-stdout.txt') }
+          let(:stderr) { read_fixture_file('outputs', 'ffprobe-unsupported-audio-and-video-stderr.txt') }
 
-        [0, 90, 180, 270].each do |rotation|
-          describe "ios_rotate#{rotation}.mov" do
-            subject { described_class.new("#{fixture_path}/movies/ios_rotate#{rotation}.mov") }
+          before { expect(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, stderr, nil]) }
 
-            it 'should return the correct rotation' do
-              expect(subject.rotation).to eq(rotation.zero? ? nil : rotation)
-            end
+          it 'returns false' do
+            expect(subject.valid?).to be(false)
+          end
+        end
+
+        context 'only supported streams' do
+          it 'returns true' do
+            expect(subject.valid?).to be(true)
           end
         end
       end
     end
 
-    %i[
-      index
-      profile
-      codec_name
-      codec_type
-      bitrate
-      overview
-      tags
-    ].each do |method|
-      describe "#video_#{method}" do
-        it 'should delegate to the video stream' do
-          expect(subject.video).to receive(method).and_return('foo')
-          expect(subject.send("video_#{method}")).to be('foo')
+    describe '#video_streams' do
+      context 'when the media has video streams' do
+        it 'returns the video streams' do
+          expect(subject.video_streams.length).to be >= 1
+          expect(subject.video_streams).to all(be_a(FFMPEG::Stream))
+          expect(subject.video_streams.select(&:video?)).to eq(subject.video_streams)
+        end
+      end
+
+      context 'when the media does not have video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns an empty array' do
+          expect(subject.video_streams).to eq([])
         end
       end
     end
 
-    describe '#audio' do
-      it 'should return the audio streams' do
-        expect(subject.audio).to all(be_a(Stream))
-        expect(subject.audio.map(&:codec_type)).to all(eq('audio'))
+    describe '#video_streams?' do
+      context 'when the media has video streams' do
+        it 'returns true' do
+          expect(subject.video_streams?).to be(true)
+        end
+      end
+
+      context 'when the media does not have video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns false' do
+          expect(subject.video_streams?).to be(false)
+        end
+      end
+    end
+
+    describe '#video?' do
+      context 'when the media has a moving video stream' do
+        it 'returns true' do
+          expect(subject.video?).to be(true)
+        end
+      end
+
+      context 'when the media has moving and still video streams' do
+        let(:path) { fixture_media_file('attached-pic.mov') }
+
+        it 'returns true' do
+          expect(subject.video?).to be(true)
+        end
+      end
+
+      context 'when the media only has still video streams' do
+        let(:path) { fixture_media_file('napoleon.mp3') }
+
+        it 'returns false' do
+          expect(subject.video?).to be(false)
+        end
+      end
+
+      context 'when the media has no video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns false' do
+          expect(subject.video?).to be(false)
+        end
+      end
+    end
+
+    describe '#default_video_stream' do
+      context 'when the media has a default video stream' do
+        it 'returns the default video stream' do
+          expect(subject.default_video_stream).to be_a(FFMPEG::Stream)
+          expect(subject.default_video_stream.video?).to be(true)
+          expect(subject.default_video_stream.default?).to be(true)
+        end
+      end
+
+      context 'when the media does not have video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns nil' do
+          expect(subject.default_video_stream).to be(nil)
+        end
+      end
+    end
+
+    describe '#rotated?' do
+      context 'when the default video stream is not rotated' do
+        it 'returns false' do
+          expect(subject.rotated?).to be(false)
+        end
+      end
+
+      context 'when the default video stream is rotated' do
+        let(:path) { fixture_media_file('rotated@90.mov') }
+
+        it 'returns true' do
+          expect(subject.rotated?).to be(true)
+        end
+      end
+
+      context 'when the default video stream is fully rotated' do
+        let(:path) { fixture_media_file('rotated@180.mov') }
+
+        it 'returns false' do
+          expect(subject.rotated?).to be(false)
+        end
+      end
+
+      context 'when the media has no video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns false' do
+          expect(subject.rotated?).to be(false)
+        end
+      end
+    end
+
+    describe '#portrait?' do
+      context 'when the default video stream is not portrait' do
+        it 'returns false' do
+          expect(subject.portrait?).to be(false)
+        end
+      end
+
+      context 'when the default video stream is portrait' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns true' do
+          expect(subject.portrait?).to be(true)
+        end
+      end
+
+      context 'when the media has no video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns false' do
+          expect(subject.portrait?).to be(false)
+        end
+      end
+    end
+
+    describe '#landscape?' do
+      context 'when the default video stream is landscape' do
+        it 'returns true' do
+          expect(subject.landscape?).to be(true)
+        end
+      end
+
+      context 'when the default video stream is not landscape' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns false' do
+          expect(subject.landscape?).to be(false)
+        end
+      end
+
+      context 'when the media has no video streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns false' do
+          expect(subject.landscape?).to be(false)
+        end
+      end
+    end
+
+    describe '#width' do
+      context 'when the default video stream is not rotated' do
+        it 'returns its width' do
+          expect(subject.width).to be(3840)
+        end
+      end
+
+      context 'when the default video stream is rotated' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns its height' do
+          expect(subject.width).to be(2160)
+        end
+      end
+    end
+
+    describe '#raw_width' do
+      let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+      it 'returns the width of the default video stream' do
+        expect(subject.raw_width).to be(3840)
+      end
+    end
+
+    describe '#height' do
+      context 'when the default video stream is not rotated' do
+        it 'returns its height' do
+          expect(subject.height).to be(2160)
+        end
+      end
+
+      context 'when the default video stream is rotated' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns its width' do
+          expect(subject.height).to be(3840)
+        end
+      end
+    end
+
+    describe '#raw_height' do
+      let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+      it 'returns the height of the default video stream' do
+        expect(subject.raw_height).to be(2160)
+      end
+    end
+
+    describe '#rotation' do
+      context 'when the default video stream is not rotated' do
+        it 'returns nil' do
+          expect(subject.rotation).to be(nil)
+        end
+      end
+
+      [90, 180, 270].each do |rotation|
+        context "when the default video stream is rotated at #{rotation}" do
+          let(:path) { fixture_media_file("rotated@#{rotation}.mov") }
+
+          it "returns #{rotation}" do
+            expect(subject.rotation).to be(rotation)
+          end
+        end
+      end
+    end
+
+    describe '#resolution' do
+      context 'when the default video stream is not rotated' do
+        it 'returns the correct resolution' do
+          expect(subject.resolution).to eq('3840x2160')
+        end
+      end
+
+      context 'when the default video stream is rotated' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns the correct resolution' do
+          expect(subject.resolution).to eq('2160x3840')
+        end
+      end
+    end
+
+    describe '#display_aspect_ratio' do
+      let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+      it 'returns the display aspect ratio of the default video stream' do
+        expect(subject.display_aspect_ratio).to eq('16:9')
+      end
+    end
+
+    describe '#sample_aspect_ratio' do
+      it 'returns the sample aspect ratio of the default video stream' do
+        expect(subject.sample_aspect_ratio).to eq('1:1')
+      end
+    end
+
+    describe '#calculated_aspect_ratio' do
+      context 'when the default video stream is not rotated' do
+        it 'returns the aspect ratio of the default video stream' do
+          expect(subject.calculated_aspect_ratio).to eq(Rational(16, 9))
+        end
+      end
+
+      context 'when the default video stream is rotated' do
+        let(:path) { fixture_media_file('portrait@4k60.mp4') }
+
+        it 'returns the inverted aspect ratio of the default video stream' do
+          expect(subject.calculated_aspect_ratio).to eq(Rational(9, 16))
+        end
+      end
+    end
+
+    {
+      calculated_pixel_aspect_ratio: Rational(1),
+      color_range: 'pc',
+      color_space: 'yuvj420p',
+      frame_rate: Rational(60 / 1),
+      frames: 213,
+      video_index: 0,
+      video_mapping_index: 0,
+      video_mapping_id: 'v:0',
+      video_profile: 'High',
+      video_codec_name: 'h264',
+      video_bit_rate: 41_401_600,
+      video_overview: 'h264 (High) (avc1 / 0x31637661), yuvj420p, 3840x2160 [SAR 1:1 DAR 16:9]',
+      video_tags: {
+        encoder: 'Lavc61.19.100 libx264',
+        handler_name: 'VideoHandle',
+        language: 'eng',
+        vendor_id: '[0][0][0][0]'
+      }
+    }.each do |method, value|
+      describe "##{method}" do
+        it "returns the #{method.to_s.gsub(/^video_/, '').gsub('_', ' ')} of the default video stream" do
+          expect(subject.public_send(method)).to eq(value)
+        end
+      end
+    end
+
+    describe '#audio_streams' do
+      context 'when the media has audio streams' do
+        let(:path) { fixture_media_file('widescreen-multi-audio.mp4') }
+
+        it 'returns the audio streams' do
+          expect(subject.audio_streams.length).to be >= 1
+          expect(subject.audio_streams).to all(be_a(FFMPEG::Stream))
+          expect(subject.audio_streams.select(&:audio?)).to eq(subject.audio_streams)
+        end
+      end
+
+      context 'when the media does not have audio streams' do
+        let(:path) { fixture_media_file('widescreen-no-audio.mp4') }
+
+        it 'returns an empty array' do
+          expect(subject.audio_streams).to eq([])
+        end
+      end
+    end
+
+    describe '#audio_streams?' do
+      context 'when the media has audio streams' do
+        it 'returns true' do
+          expect(subject.audio_streams?).to be(true)
+        end
+      end
+
+      context 'when the media does not have audio streams' do
+        let(:path) { fixture_media_file('widescreen-no-audio.mp4') }
+
+        it 'returns false' do
+          expect(subject.audio_streams?).to be(false)
+        end
       end
     end
 
     describe '#audio?' do
-      it 'should return true if the media has audio streams' do
-        expect(subject.audio?).to be(true)
+      context 'when the media only has audio streams' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns true' do
+          expect(subject.audio?).to be(true)
+        end
       end
 
-      it 'should return false if the media does not have audio streams' do
-        subject.instance_variable_set(:@audio, [])
-        expect(subject.audio?).to be(false)
-      end
-    end
+      context 'when the media only has audio streams and still video streams' do
+        let(:path) { fixture_media_file('napoleon.mp3') }
 
-    describe '#audio_only?' do
-      it 'should return true if the media has only audio streams' do
-        subject = described_class.new("#{fixture_path}/sounds/hello.wav")
-        expect(subject.audio_only?).to be(true)
+        it 'returns true' do
+          expect(subject.audio?).to be(true)
+        end
       end
 
-      it 'should return false if the media has video streams' do
-        subject = described_class.new("#{fixture_path}/sounds/napoleon.mp3")
-        expect(subject.audio_only?).to be(false)
+      context 'when the media has audio and moving video streams' do
+        it 'returns false' do
+          expect(subject.audio?).to be(false)
+        end
       end
 
-      it 'should return false if the media does not have audio streams' do
-        subject = described_class.new("#{fixture_path}/movies/awesome_movie.mov")
-        expect(subject.audio_only?).to be(false)
-      end
-    end
+      context 'when the media has no audio streams' do
+        let(:path) { fixture_media_file('widescreen-no-audio.mp4') }
 
-    describe '#audio_with_attached_pic?' do
-      it 'should return true if the media has audio streams with attached pictures' do
-        subject = described_class.new("#{fixture_path}/sounds/napoleon.mp3")
-        expect(subject.audio_with_attached_pic?).to be(true)
-      end
-
-      it 'should return false if the media does not have audio streams with attached pictures' do
-        expect(subject.audio_with_attached_pic?).to be(false)
-      end
-
-      it 'should return false if the media does not have attached pictures' do
-        subject = described_class.new("#{fixture_path}/sounds/hello.wav")
-        expect(subject.audio_with_attached_pic?).to be(false)
-      end
-
-      it 'should return false if the media has both attached pictures and normal video streams' do
-        subject = described_class.new("#{fixture_path}/movies/attached_pic.mov")
-        expect(subject.audio_with_attached_pic?).to be(false)
-      end
-    end
-
-    %i[
-      index
-      profile
-      codec_name
-      codec_type
-      bitrate
-      channels
-      channel_layout
-      sample_rate
-      overview
-      tags
-    ].each do |method|
-      describe "#audio_#{method}" do
-        it 'should delegate to the first audio stream' do
-          expect(subject.audio.first).to receive(method).and_return('foo')
-          expect(subject.send("audio_#{method}")).to be('foo')
+        it 'returns false' do
+          expect(subject.audio?).to be(false)
         end
       end
     end
 
-    describe '#transcoder' do
-      let(:output_path) { tmp_file(ext: 'mov') }
-
-      it 'returns a transcoder for the media' do
-        transcoder = subject.transcoder(output_path, { custom: %w[-vcodec libx264] })
-        expect(transcoder).to be_a(Transcoder)
-        expect(transcoder.input_path).to eq(subject.path)
-        expect(transcoder.output_path).to eq(output_path)
-        expect(transcoder.command.join(' ')).to include('-vcodec libx264')
-      end
-    end
-
-    describe '#transcode' do
-      let(:output_path) { tmp_file(ext: 'mov') }
-      let(:options) { { custom: %w[-vcodec libx264] } }
-      let(:kwargs) { { preserve_aspect_ratio: :width } }
-
-      it 'should run the transcoder' do
-        transcoder_double = double(Transcoder)
-        expect(Transcoder).to receive(:new)
-          .with(subject, output_path, options, **kwargs)
-          .and_return(transcoder_double)
-        expect(transcoder_double).to receive(:run)
-
-        subject.transcode(output_path, options, **kwargs)
-      end
-    end
-
-    describe '#screenshot' do
-      let(:output_path) { tmp_file(ext: 'jpg') }
-      let(:options) { { seek_time: 2, dimensions: '640x480' } }
-      let(:kwargs) { { preserve_aspect_ratio: :width } }
-
-      it 'should run the transcoder with screenshot option' do
-        transcoder_double = double(Transcoder)
-        expect(Transcoder).to receive(:new)
-          .with(subject, output_path, options.merge(screenshot: true), **kwargs)
-          .and_return(transcoder_double)
-        expect(transcoder_double).to receive(:run)
-
-        subject.screenshot(output_path, options, **kwargs)
-      end
-    end
-
-    describe '#cut' do
-      let(:output_path) { tmp_file(ext: 'mov') }
-      let(:options) { { custom: %w[-vcodec libx264] } }
-
-      context 'with no input options' do
-        it 'should run the transcoder to cut the media' do
-          expected_kwargs = { input_options: %w[-to 4] }
-          transcoder_double = double(Transcoder)
-          expect(Transcoder).to receive(:new)
-            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
-            .and_return(transcoder_double)
-          expect(transcoder_double).to receive(:run)
-
-          subject.cut(output_path, 2, 4, options)
+    describe '#silent?' do
+      context 'when the media has an audio stream' do
+        it 'returns false' do
+          expect(subject.silent?).to be(false)
         end
       end
 
-      context 'with input options as a string array' do
-        let(:kwargs) { { input_options: %w[-ss 999] } }
+      context 'when the media has no audio streams' do
+        let(:path) { fixture_media_file('widescreen-no-audio.mp4') }
 
-        it 'should run the transcoder to cut the media' do
-          expected_kwargs = kwargs.merge({ input_options: kwargs[:input_options] + %w[-to 4] })
-          transcoder_double = double(Transcoder)
-          expect(Transcoder).to receive(:new)
-            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
-            .and_return(transcoder_double)
-          expect(transcoder_double).to receive(:run)
-
-          subject.cut(output_path, 2, 4, options, **kwargs)
-        end
-      end
-
-      context 'with input options as a hash' do
-        let(:kwargs) { { input_options: { ss: 999 } } }
-
-        it 'should run the transcoder to cut the media' do
-          expected_kwargs = kwargs.merge({ input_options: kwargs[:input_options].merge({ to: 4 }) })
-          transcoder_double = double(Transcoder)
-          expect(Transcoder).to receive(:new)
-            .with(subject, output_path, options.merge(seek_time: 2), **expected_kwargs)
-            .and_return(transcoder_double)
-          expect(transcoder_double).to receive(:run)
-
-          subject.cut(output_path, 2, 4, options, **kwargs)
+        it 'returns true' do
+          expect(subject.silent?).to be(true)
         end
       end
     end
 
-    describe '.concat' do
-      let(:output_path) { tmp_file(ext: 'mov') }
-      let(:segment1_path) { tmp_file(basename: 'segment1', ext: 'mov') }
-      let(:segment2_path) { tmp_file(basename: 'segment2', ext: 'mov') }
+    describe '#default_audio_stream' do
+      context 'when the media has a default audio stream' do
+        let(:path) { fixture_media_file('widescreen-multi-audio.mp4') }
 
-      it 'should run the transcoder to concatenate the segments' do
-        segment1 = subject.cut(segment1_path, 1, 3)
-        segment2 = subject.cut(segment2_path, 4, subject.duration)
-        result = described_class.concat(output_path, segment1, segment2)
-        expect(result).to be_a(Media)
-        expect(result.path).to eq(output_path)
-        expect(result.duration).to be_within(0.2).of(5.7)
+        it 'returns the default audio stream' do
+          expect(subject.default_audio_stream).to be_a(FFMPEG::Stream)
+          expect(subject.default_audio_stream.audio?).to be(true)
+          expect(subject.default_audio_stream.default?).to be(true)
+        end
+      end
+
+      context 'when the media does not have audio streams' do
+        let(:path) { fixture_media_file('widescreen-no-audio.mp4') }
+
+        it 'returns nil' do
+          expect(subject.default_audio_stream).to be(nil)
+        end
+      end
+    end
+
+    {
+      audio_index: 1,
+      audio_mapping_index: 0,
+      audio_mapping_id: 'a:0',
+      audio_codec_name: 'aac',
+      audio_bit_rate: 192_028,
+      audio_overview: 'aac (mp4a / 0x6134706d), 48000 Hz, stereo, fltp, 192028 bit/s',
+      audio_tags: {
+        handler_name: 'SoundHandle',
+        language: 'eng',
+        vendor_id: '[0][0][0][0]'
+      }
+    }.each do |method, value|
+      describe "##{method}" do
+        it "returns the #{method.to_s.gsub(/^audio_/, '').gsub('_', ' ')} of the default audio stream" do
+          expect(subject.public_send(method)).to eq(value)
+        end
+      end
+    end
+
+    describe '#ffmpeg_execute' do
+      it 'executes a ffmpeg command with the media as input' do
+        reports = []
+        block = ->(report) { reports << report }
+        args = %w[-af silencedetect=d=0.5 -f null -]
+        reporters = [FFMPEG::Reporters::Silence]
+
+        expect(FFMPEG).to receive(:ffmpeg_execute).and_call_original
+
+        status = subject.ffmpeg_execute(*args, reporters:, &block)
+        expect(status).to be_a(Process::Status)
+        expect(status.exitstatus).to be(0)
+
+        expect(reports.length).to be >= 1
+        expect(reports).to all(be_a(FFMPEG::Reporters::Output))
+        expect(reports.select do |report|
+          report.is_a?(FFMPEG::Reporters::Silence)
+        end.length).to be >= 1
       end
     end
   end

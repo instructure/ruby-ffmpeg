@@ -3,26 +3,13 @@
 module FFMPEG
   # The Stream class represents a multimedia stream in a file.
   class Stream
-    module CodecType
-      VIDEO = 'video'
-      AUDIO = 'audio'
-    end
-
-    module ChannelLayout
-      MONO = 'mono'
-      STEREO = 'stereo'
-      FIVE_ONE = '5.1'
-      SEVEN_ONE = '7.1'
-      UNKNOWN = 'unknown'
-    end
-
     attr_reader :metadata,
                 :id, :index, :profile, :tags,
                 :codec_name, :codec_long_name, :codec_tag, :codec_tag_string, :codec_type,
                 :coded_width, :coded_height, :sample_aspect_ratio, :display_aspect_ratio, :rotation,
                 :color_range, :color_space, :frame_rate,
                 :sample_rate, :sample_fmt, :channels, :channel_layout,
-                :start_time, :bitrate, :duration, :frames, :overview
+                :start_time, :bit_rate, :duration, :frames, :overview
 
     def initialize(metadata, stderr = '')
       @metadata = metadata
@@ -36,12 +23,12 @@ module FFMPEG
       @codec_long_name = metadata[:codec_long_name]
       @codec_tag = metadata[:codec_tag]
       @codec_tag_string = metadata[:codec_tag_string]
-      @codec_type = metadata[:codec_type]
+      @codec_type = metadata[:codec_type]&.to_sym
 
-      @width = metadata[:width]
-      @height = metadata[:height]
-      @coded_width = metadata[:coded_width]
-      @coded_height = metadata[:coded_height]
+      @width = metadata[:width]&.to_i
+      @height = metadata[:height]&.to_i
+      @coded_width = metadata[:coded_width]&.to_i
+      @coded_height = metadata[:coded_height]&.to_i
       @sample_aspect_ratio = metadata[:sample_aspect_ratio]
       @display_aspect_ratio = metadata[:display_aspect_ratio]
 
@@ -69,7 +56,7 @@ module FFMPEG
       @channel_layout = metadata[:channel_layout]
 
       @start_time = metadata[:start_time].to_f
-      @bitrate = metadata[:bit_rate].to_i
+      @bit_rate = metadata[:bit_rate].to_i
       @duration = metadata[:duration].to_f
       @frames = metadata[:nb_frames].to_i
 
@@ -85,65 +72,148 @@ module FFMPEG
                     "#{sample_rate} Hz, " \
                     "#{channel_layout}, " \
                     "#{sample_fmt}, " \
-                    "#{bitrate} bit/s"
+                    "#{bit_rate} bit/s"
       end
 
       @supported = stderr !~ /^Unsupported codec with id (\d+) for input stream #{Regexp.quote(@index.to_s)}$/
     end
 
+    # Whether the stream is supported.
+    #
+    # @return [Boolean]
     def supported?
       @supported
     end
 
+    # Whether the stream is unsupported.
+    #
+    # @return [Boolean]
     def unsupported?
       !supported?
     end
 
+    # Whether the stream is a video stream.
+    #
+    # @return [Boolean]
     def video?
-      codec_type == CodecType::VIDEO
+      codec_type == :video
     end
 
+    # Whether the stream is an audio stream.
+    #
+    # @return [Boolean]
     def audio?
-      codec_type == CodecType::AUDIO
+      codec_type == :audio
     end
 
+    # Whether the stream is marked as default.
+    #
+    # @return [Boolean]
     def default?
       metadata.dig(:disposition, :default) == 1
     end
 
+    # Whether the stream is marked as an attached picture.
+    #
+    # @return [Boolean]
     def attached_pic?
       metadata.dig(:disposition, :attached_pic) == 1
     end
 
+    # Whether the stream is rotated.
+    # This is determined by the value of a rotation tag or display matrix side data.
+    #
+    # @return [Boolean]
+    def rotated?
+      !@rotation.nil? && @rotation % 180 != 0
+    end
+
+    # Whether the stream is portrait.
+    #
+    # @return [Boolean]
+    def portrait?
+      return true if width < height
+
+      width == height && rotated?
+    end
+
+    # Whether the stream is landscape.
+    #
+    # @return [Boolean]
+    def landscape?
+      return true if width > height
+
+      width == height && !rotated?
+    end
+
+    # The width of the stream.
+    # If the stream is rotated, the height is returned instead.
+    #
+    # @return [Integer]
     def width
-      @rotation.nil? || @rotation == 180 ? @width : @height
+      rotated? ? @height : @width
     end
 
+    # The raw width of the stream.
+    # This is the width of the stream without considering rotation.
+    #
+    # @return [Integer]
+    def raw_width
+      @width
+    end
+
+    # The height of the stream.
+    # If the stream is rotated, the width is returned instead.
+    #
+    # @return [Integer]
     def height
-      @rotation.nil? || @rotation == 180 ? @height : @width
+      rotated? ? @width : @height
     end
 
+    # The raw height of the stream.
+    # This is the height of the stream without considering rotation.
+    #
+    # @return [Integer]
+    def raw_height
+      @height
+    end
+
+    # The resolution of the stream.
+    # This is a string in the format "#{width}x#{height}".
+    #
+    # @return [String]
     def resolution
       return if width.nil? || height.nil?
 
       "#{width}x#{height}"
     end
 
+    # The calculated aspect ratio of the stream.
+    # This is calculated from the display aspect ratio or the width and height.
+    # If neither are available, nil is returned.
+    # If the stream is rotated, the inverted aspect ratio is returned.
+    #
+    # @return [Rational, nil]
     def calculated_aspect_ratio
       return @calculated_aspect_ratio unless @calculated_aspect_ratio.nil?
 
       @calculated_aspect_ratio = calculate_aspect_ratio(display_aspect_ratio)
-      @calculated_aspect_ratio ||= width.to_f / height.to_f
-      @calculated_aspect_ratio = nil if @calculated_aspect_ratio.nan?
+      @calculated_aspect_ratio ||= Rational(width, height) if width && height
 
       @calculated_aspect_ratio
     end
 
+    # The calculated pixel aspect ratio of the stream.
+    # This is calculated from the sample aspect ratio.
+    # If the sample aspect ratio is not available, 1 is returned.
+    # If the stream is rotated, the inverted aspect ratio is returned.
+    #
+    # @return [Rational]
     def calculated_pixel_aspect_ratio
       return @calculated_pixel_aspect_ratio unless @calculated_pixel_aspect_ratio.nil?
 
       @calculated_pixel_aspect_ratio = calculate_aspect_ratio(sample_aspect_ratio)
-      @calculated_pixel_aspect_ratio ||= 1
+      @calculated_pixel_aspect_ratio ||= Rational(1)
     end
 
     protected
@@ -151,10 +221,10 @@ module FFMPEG
     def calculate_aspect_ratio(source)
       return nil if source.nil?
 
-      width, height = source.split(':')
-      return nil if width == '0' || height == '0'
+      width, height = source.split(':').map(&:to_i)
+      return nil if width.zero? || height.zero?
 
-      @rotation.nil? || (@rotation == 180) ? width.to_f / height.to_f : height.to_f / width.to_f
+      rotated? ? Rational(height, width) : Rational(width, height)
     end
   end
 end

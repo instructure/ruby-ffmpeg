@@ -8,40 +8,50 @@ Bundler.require
 
 require 'debug'
 require 'fileutils'
+require 'uri'
 require 'webmock/rspec'
 require 'webrick'
-WebMock.allow_net_connect!
 
 FFMPEG.logger = Logger.new(nil)
 
 RSpec.configure do |config|
   config.filter_run focus: true
   config.run_all_when_everything_filtered = true
-
-  config.before(:each) do
-    stub_request(:head, 'http://127.0.0.1:8000/moved/awesome_movie.mov')
-      .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
-      .to_return(status: 302, headers: { location: '/awesome_movie.mov' })
-    stub_request(:head, 'http://127.0.0.1:8000/notfound/awesome_movie.mov')
-      .with(headers: { 'Accept' => '*/*', 'User-Agent' => 'Ruby' })
-      .to_return(status: 404, headers: {})
-  end
-
   config.after(:suite) do
-    FileUtils.rm_rf(tmp_path)
+    FileUtils.rm_rf(tmp_dir)
   end
 end
 
-def fixture_path
-  @fixture_path ||= File.join(File.dirname(__FILE__), 'fixtures')
+def fixture_dir
+  @fixture_dir ||= File.join(File.dirname(__FILE__), 'fixtures')
 end
 
-def tmp_path
-  @tmp_path ||= File.join(File.dirname(__FILE__), '..', 'tmp')
+def fixture_file(*path)
+  File.join(fixture_dir, *path)
 end
 
-def read_fixture_file(filename)
-  File.read(File.join(fixture_path, filename))
+def fixture_media_dir
+  @fixture_media_dir ||= File.join(fixture_dir, 'media')
+end
+
+def fixture_media_url
+  'http://127.0.0.1:8000'
+end
+
+def fixture_media_file(*path, remote: false)
+  if remote
+    URI.join(fixture_media_url, *path).to_s
+  else
+    File.join(fixture_media_dir, *path)
+  end
+end
+
+def read_fixture_file(*path)
+  File.read(fixture_file(*path))
+end
+
+def tmp_dir
+  @tmp_dir ||= File.join(File.dirname(__FILE__), '..', 'tmp')
 end
 
 def tmp_file(filename: nil, basename: nil, ext: nil)
@@ -52,20 +62,28 @@ def tmp_file(filename: nil, basename: nil, ext: nil)
     filename += ".#{ext}" if ext
   end
 
-  File.join(tmp_path, filename)
+  File.join(tmp_dir, filename)
 end
 
 def start_web_server
   @server = WEBrick::HTTPServer.new(
     Port: 8000,
-    DocumentRoot: "#{fixture_path}/movies",
+    DocumentRoot: "#{fixture_dir}/media",
     Logger: WEBrick::Log.new(File.open(File::NULL, 'w')),
     AccessLog: []
   )
 
-  @server.mount_proc '/unauthorized.mov' do |_, response|
+  @server.mount_proc '/unauthorized' do |_, response|
     response.body = 'Unauthorized'
     response.status = 403
+  end
+
+  @server.mount_proc '/moved' do |request, response|
+    filename = request.path&.split('/')&.last
+    raise WEBrick::HTTPStatus::ServerError unless filename
+
+    response['Location'] = "/#{filename}"
+    response.status = 302
   end
 
   Thread.new { @server.start }
@@ -75,5 +93,5 @@ def stop_web_server
   @server.shutdown
 end
 
-FileUtils.rm_rf(tmp_path)
-FileUtils.mkdir_p tmp_path
+FileUtils.rm_rf(tmp_dir)
+FileUtils.mkdir_p tmp_dir

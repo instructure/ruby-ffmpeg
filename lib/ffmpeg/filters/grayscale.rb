@@ -1,18 +1,23 @@
 # frozen_string_literal: true
 
+require_relative '../filter'
+
 module FFMPEG
+  # rubocop:disable Style/Documentation
   module Filters
-    # The Grayscale class uses the format filter
-    # to convert a multimedia file to grayscale.
-    class Grayscale
-      include Filter
+    # rubocop:enable Style/Documentation
 
-      def to_s
-        'format=gray'
+    class << self
+      def grayscale
+        Grayscale.new
       end
+    end
 
-      def to_a
-        ['-vf', to_s]
+    # The Grayscale class uses the format filter
+    # to convert a multimedia stream to grayscale.
+    class Grayscale < Filter
+      def initialize
+        super(:video, 'format', pix_fmts: ['gray'])
       end
     end
   end

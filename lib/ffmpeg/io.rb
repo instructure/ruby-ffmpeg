@@ -3,6 +3,8 @@
 require 'English'
 require 'timeout'
 
+require_relative 'timeout'
+
 module FFMPEG
   # The IO class is a simple wrapper around IO objects that adds a timeout
   # to all read operations and fixes encoding issues.
@@ -17,6 +19,7 @@ module FFMPEG
 
     def initialize(target)
       @target = target
+      @timeout = FFMPEG.io_timeout
     end
 
     def each(&block)
