@@ -22,7 +22,7 @@ module FFMPEG
                 :coded_width, :coded_height, :sample_aspect_ratio, :display_aspect_ratio, :rotation,
                 :color_range, :color_space, :frame_rate,
                 :sample_rate, :sample_fmt, :channels, :channel_layout,
-                :start_time, :bitrate, :duration, :frames, :overview
+                :start_time, :bit_rate, :duration, :frames, :overview
 
     def initialize(metadata, stderr = '')
       @metadata = metadata
@@ -31,6 +31,7 @@ module FFMPEG
       @index = metadata[:index]
       @profile = metadata[:profile]
       @tags = metadata[:tags]
+      @default = [1, true].include?(metadata[:disposition]&.[](:default))
 
       @codec_name = metadata[:codec_name]
       @codec_long_name = metadata[:codec_long_name]
@@ -63,7 +64,7 @@ module FFMPEG
       @channel_layout = metadata[:channel_layout]
 
       @start_time = metadata[:start_time].to_f
-      @bitrate = metadata[:bit_rate].to_i
+      @bit_rate = metadata[:bit_rate].to_i
       @duration = metadata[:duration].to_f
       @frames = metadata[:nb_frames].to_i
 
@@ -79,7 +80,7 @@ module FFMPEG
                     "#{sample_rate} Hz, " \
                     "#{channel_layout}, " \
                     "#{sample_fmt}, " \
-                    "#{bitrate} bit/s"
+                    "#{bit_rate} bit/s"
       end
 
       @supported = stderr !~ /^Unsupported codec with id (\d+) for input stream #{Regexp.quote(@index.to_s)}$/
@@ -91,6 +92,10 @@ module FFMPEG
 
     def unsupported?
       !supported?
+    end
+
+    def default?
+      @default
     end
 
     def video?

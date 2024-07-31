@@ -1,18 +1,14 @@
 # frozen_string_literal: true
 
+require_relative '../filter'
+
 module FFMPEG
   module Filters
     # The Grayscale class uses the format filter
     # to convert a multimedia file to grayscale.
-    class Grayscale
-      include Filter
-
-      def to_s
-        'format=gray'
-      end
-
-      def to_a
-        ['-vf', to_s]
+    class Grayscale < Filter
+      def initialize
+        super(Filter::Type::VIDEO, 'format', pix_fmts: ['gray'])
       end
     end
   end
