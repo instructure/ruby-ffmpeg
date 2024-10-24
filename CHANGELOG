@@ -1,3 +1,7 @@
+== 6.1.0 2024-10-24
+* Added new `default?` and `attached_pic?` helper methods to FFMPEG::Stream objects
+* Added new `audio_with_attached_pic?` helper method to FFMPEG::Media objects
+
 == 6.0.2 2024-06-19
 
 Fixes:
