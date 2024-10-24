@@ -247,12 +247,29 @@ module FFMPEG
       end
 
       it 'should return false if the media has video streams' do
+        subject = described_class.new("#{fixture_path}/sounds/napoleon.mp3")
         expect(subject.audio_only?).to be(false)
       end
 
       it 'should return false if the media does not have audio streams' do
         subject = described_class.new("#{fixture_path}/movies/awesome_movie.mov")
         expect(subject.audio_only?).to be(false)
+      end
+    end
+
+    describe '#audio_with_attached_pic?' do
+      it 'should return true if the media has audio streams with attached pictures' do
+        subject = described_class.new("#{fixture_path}/sounds/napoleon.mp3")
+        expect(subject.audio_with_attached_pic?).to be(true)
+      end
+
+      it 'should return false if the media does not have audio streams with attached pictures' do
+        expect(subject.audio_with_attached_pic?).to be(false)
+      end
+
+      it 'should return false if the media does not have attached pictures' do
+        subject = described_class.new("#{fixture_path}/sounds/hello.wav")
+        expect(subject.audio_with_attached_pic?).to be(false)
       end
     end
 

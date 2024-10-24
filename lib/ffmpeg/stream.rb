@@ -101,6 +101,14 @@ module FFMPEG
       codec_type == CodecType::AUDIO
     end
 
+    def default?
+      metadata.dig(:disposition, :default) == 1
+    end
+
+    def attached_pic?
+      metadata.dig(:disposition, :attached_pic) == 1
+    end
+
     def width
       @rotation.nil? || @rotation == 180 ? @width : @height
     end
