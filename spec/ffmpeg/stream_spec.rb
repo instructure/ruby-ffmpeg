@@ -62,6 +62,42 @@ module FFMPEG
       end
     end
 
+    describe '#default?' do
+      context 'when marked as default' do
+        let(:metadata) { { disposition: { default: 1 } } }
+
+        it 'should return true' do
+          expect(subject.default?).to be(true)
+        end
+      end
+
+      context 'when not marked as default' do
+        let(:metadata) { { disposition: { default: 0 } } }
+
+        it 'should return false' do
+          expect(subject.default?).to be(false)
+        end
+      end
+    end
+
+    describe '#attached_pic?' do
+      context 'when marked as an attached picture' do
+        let(:metadata) { { disposition: { attached_pic: 1 } } }
+
+        it 'should return true' do
+          expect(subject.attached_pic?).to be(true)
+        end
+      end
+
+      context 'when not marked as an attached picture' do
+        let(:metadata) { { disposition: { attached_pic: 0 } } }
+
+        it 'should return false' do
+          expect(subject.attached_pic?).to be(false)
+        end
+      end
+    end
+
     describe '#width' do
       context 'when the rotation is nil' do
         let(:metadata) { { width: 100, height: 200 } }
