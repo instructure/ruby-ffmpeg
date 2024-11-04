@@ -15,7 +15,12 @@ jobs:
     strategy:
       matrix:
         ruby-version: ['3.0', '3.1', '3.2', '3.3']
-        ffmpeg-version: ['6.0.1', '5.1.1', '4.4.1']
+        ffmpeg-version: ['7.0.2', '6.0.1', '5.1.1', '4.4.1']
+
+        include:
+          - ffmpeg-version: '7.0.2'
+            download-path: 'releases'
+            version-name: 'release'
 
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +35,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          wget https://johnvansickle.com/ffmpeg/old-releases/ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
-          tar -xf ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
+          wget https://johnvansickle.com/ffmpeg/${{ matrix.download-path || 'old-releases' }}/ffmpeg-${{ matrix.version-name || matrix.ffmpeg-version }}-amd64-static.tar.xz
+          tar -xf ffmpeg-${{ matrix.version-name || matrix.ffmpeg-version }}-amd64-static.tar.xz
           sudo mv ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static/ffmpeg /usr/local/bin/ffmpeg
           sudo mv ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static/ffprobe /usr/local/bin/ffprobe
-          rm -rf ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static
+          rm -rf ffmpeg-${{ matrix.version-name || matrix.ffmpeg-version }}-amd64-static.tar.xz ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static
 
       - name: Run RSpec
         run: bundle exec rspec

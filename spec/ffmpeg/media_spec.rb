@@ -271,6 +271,11 @@ module FFMPEG
         subject = described_class.new("#{fixture_path}/sounds/hello.wav")
         expect(subject.audio_with_attached_pic?).to be(false)
       end
+
+      it 'should return false if the media has both attached pictures and normal video streams' do
+        subject = described_class.new("#{fixture_path}/movies/attached_pic.mov")
+        expect(subject.audio_with_attached_pic?).to be(false)
+      end
     end
 
     %i[

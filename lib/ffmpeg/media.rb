@@ -196,7 +196,7 @@ module FFMPEG
     end
 
     def audio_with_attached_pic?
-      audio? && streams.any?(&:attached_pic?)
+      audio? && video? && streams.select(&:video?).all?(&:attached_pic?)
     end
 
     def silent?
