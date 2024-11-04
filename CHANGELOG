@@ -1,8 +1,14 @@
+== 6.1.1 2024-11-04
+
+Fixes:
+* MOV files processed in iMovie should not be marked as audio with attached picture
+
 == 6.1.0 2024-10-24
+
 * Added new `default?` and `attached_pic?` helper methods to FFMPEG::Stream objects
 * Added new `audio_with_attached_pic?` helper method to FFMPEG::Media objects
 
-== 6.0.2 2024-06-19
+== 6.0.3 2024-06-19
 
 Fixes:
 * Fixed a possible race condition that would cause the transcoder to time out even if the transcoder was still running
