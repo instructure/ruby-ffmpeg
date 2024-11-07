@@ -243,6 +243,18 @@ module FFMPEG
       audio&.first&.tags
     end
 
+    def capture_device
+      # rubocop:disable Style/SelectByRegexp
+      @capture_device ||=
+        tags
+        .select { |key| key =~ /\b(make|model)\b/i }
+        .sort
+        .map(&:last)
+        .join(' ')
+        .tap { |value| break value.empty? ? nil : value }
+      # rubocop:enable Style/SelectByRegexp
+    end
+
     def transcoder(output_path, options, **kwargs)
       Transcoder.new(self, output_path, options, **kwargs)
     end
