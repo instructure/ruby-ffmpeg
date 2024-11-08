@@ -44,12 +44,18 @@ module FFMPEG
       @coded_height = metadata[:coded_height]
       @sample_aspect_ratio = metadata[:sample_aspect_ratio]
       @display_aspect_ratio = metadata[:display_aspect_ratio]
-      @rotation = if metadata[:tags]&.key?(:rotate)
-                    metadata[:tags][:rotate].to_i
-                  elsif metadata[:side_data_list]&.first&.key?(:rotation)
-                    rotation = metadata[:side_data_list].first[:rotation].to_i
-                    rotation.positive? ? 360 - rotation : rotation.abs
-                  end
+
+      @rotation =
+        if metadata.dig(:tags, :rotate)
+          metadata.dig(:tags, :rotate).to_i
+        else
+          metadata[:side_data_list]
+            &.find { |data| data[:side_data_type] =~ /display matrix/i }
+            &.dig(:rotation)
+            &.to_i
+            &.tap { |value| break value + 180 if value % 180 != 0 }
+            &.abs
+        end
 
       @color_range = metadata[:color_range]
       @color_space = metadata[:pix_fmt] || metadata[:color_space]

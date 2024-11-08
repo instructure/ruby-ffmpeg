@@ -37,3 +37,6 @@ Style/ArgumentsForwarding:
 
 Style/FloatDivision:
   Enabled: false
+
+Style/SafeNavigationChainLength:
+  Enabled: false
