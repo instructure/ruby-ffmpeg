@@ -93,7 +93,7 @@ module FFMPEG
     #
     # @return [Array] The standard output, the standard error, and the process status.
     def ffmpeg_capture3(*args)
-      FFMPEG.logger.debug(self.class) { "ffmpeg -y #{args.join(' ')}" }
+      logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
       stdout, stderr, status = Open3.capture3(ffmpeg_binary, '-y', *args)
       FFMPEG::IO.encode!(stdout)
       FFMPEG::IO.encode!(stderr)
@@ -111,7 +111,7 @@ module FFMPEG
     # @yieldparam wait_thr (+Thread+) The child process thread.
     # @return [void]
     def ffmpeg_popen3(*args, &block)
-      FFMPEG.logger.debug(self.class) { "ffmpeg -y #{args.join(' ')}" }
+      logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
       Open3.popen3(ffmpeg_binary, '-y', *args) do |stdin, stdout, stderr, wait_thr|
         block.call(stdin, FFMPEG::IO.new(stdout), FFMPEG::IO.new(stderr), wait_thr)
       rescue StandardError
@@ -170,7 +170,7 @@ module FFMPEG
     # @return [Array] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_capture3(*args)
-      FFMPEG.logger.debug(self.class) { "ffprobe -y #{args.join(' ')}" }
+      logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
       stdout, stderr, status = Open3.capture3(ffprobe_binary, '-y', *args)
       FFMPEG::IO.encode!(stdout)
       FFMPEG::IO.encode!(stderr)
@@ -188,7 +188,7 @@ module FFMPEG
     # @return [void]
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_popen3(*args, &block)
-      FFMPEG.logger.debug(self.class) { "ffprobe -y #{args.join(' ')}" }
+      logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
       Open3.popen3(ffprobe_binary, '-y', *args) do |stdin, stdout, stderr, wait_thr|
         block.call(stdin, FFMPEG::IO.new(stdout), FFMPEG::IO.new(stderr), wait_thr)
       rescue StandardError
