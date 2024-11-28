@@ -69,6 +69,16 @@ module FFMPEG
           expect(media.audio_streams.length).to be(1)
           expect(media.audio_bit_rate).to be_within(15_000).of(128_000)
         end
+      ),
+      PresetTest.new(
+        name: 'JPEG thumbnail',
+        preset: Presets.thumbnail(max_width: 640, max_height: 360),
+        assert: lambda do |media|
+          expect(media.path).to match(/\.jpg\z/)
+          expect(media.streams.length).to be(1)
+          expect(media.width).to be(360)
+          expect(media.height).to be(640)
+        end
       )
     ].each do |test|
       describe test.name do

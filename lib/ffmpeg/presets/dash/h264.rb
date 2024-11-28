@@ -2,7 +2,6 @@
 
 require_relative '../../filter'
 require_relative '../../filters/fps'
-require_relative '../../filters/scale'
 require_relative '../../filters/split'
 require_relative '../dash'
 require_relative '../h264'

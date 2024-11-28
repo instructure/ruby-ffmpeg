@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../filters/scale'
 require_relative '../preset'
 
 module FFMPEG
@@ -172,6 +173,14 @@ module FFMPEG
         max_height: nil,
         &
       )
+        if max_width && !max_width.is_a?(Numeric)
+          raise ArgumentError, "Unknown max_width format #{max_width.class}, expected #{Numeric}"
+        end
+
+        if max_height && !max_height.is_a?(Numeric)
+          raise ArgumentError, "Unknown max_height format #{max_height.class}, expected #{Numeric}"
+        end
+
         @audio_bit_rate = audio_bit_rate
         @video_preset = video_preset
         @video_profile = video_profile
@@ -225,28 +234,9 @@ module FFMPEG
       end
 
       def scale_filter(media)
-        unless media.is_a?(FFMPEG::Media)
-          raise ArgumentError,
-                "Unknown media format #{media.class}, expected #{FFMPEG::Media}"
-        end
-
         return unless @max_width || @max_height
 
-        if media.rotated?
-          width = @max_height || -2
-          height = @max_width || -2
-        else
-          width = @max_width || -2
-          height = @max_height || -2
-        end
-
-        if width.negative? || height.negative?
-          Filters.scale(width:, height:)
-        elsif media.calculated_aspect_ratio > Rational(width, height)
-          Filters.scale(width:, height: -2)
-        else
-          Filters.scale(width: -2, height:)
-        end
+        Filters::Scale.contained(media, max_width: @max_width, max_height: @max_height)
       end
     end
   end

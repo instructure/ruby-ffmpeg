@@ -16,6 +16,51 @@ module FFMPEG
     # The Scale class uses the scale filter
     # to resize a multimedia stream.
     class Scale < Filter
+      class << self
+        # Returns a scale filter that fits the specified media
+        # within the specified maximum width and height,
+        # keeping the original aspect ratio.
+        #
+        # @param media [FFMPEG::Media] The media to fit.
+        # @param max_width [Numeric] The maximum width to fit.
+        # @param max_height [Numeric] The maximum height to fit.
+        # @return [FFMPEG::Filters::Scale] The scale filter.
+        def contained(media, max_width: nil, max_height: nil)
+          unless media.is_a?(FFMPEG::Media)
+            raise ArgumentError,
+                  "Unknown media format #{media.class}, expected #{FFMPEG::Media}"
+          end
+
+          if max_width && !max_width.is_a?(Numeric)
+            raise ArgumentError,
+                  "Unknown max_width format #{max_width.class}, expected #{Numeric}"
+          end
+
+          if max_height && !max_height.is_a?(Numeric)
+            raise ArgumentError,
+                  "Unknown max_height format #{max_height.class}, expected #{Numeric}"
+          end
+
+          return unless max_width || max_height
+
+          if media.rotated?
+            width = max_height || -2
+            height = max_width || -2
+          else
+            width = max_width || -2
+            height = max_height || -2
+          end
+
+          if width.negative? || height.negative?
+            Filters.scale(width:, height:)
+          elsif media.calculated_aspect_ratio > Rational(width, height)
+            Filters.scale(width:, height: -2)
+          else
+            Filters.scale(width: -2, height:)
+          end
+        end
+      end
+
       attr_reader :width, :height, :force_original_aspect_ratio, :flags
 
       def initialize(width: nil, height: nil, force_original_aspect_ratio: nil, flags: nil)

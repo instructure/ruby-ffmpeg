@@ -3,17 +3,6 @@
 require_relative '../spec_helper'
 
 module FFMPEG
-  # Cache the ffprobe output for testing.
-  class << self
-    alias ffprobe_raw_capture3 ffprobe_capture3
-
-    def ffprobe_capture3(*args)
-      cache_key = args.hash
-      @ffprobe_cache ||= {}
-      @ffprobe_cache[cache_key] ||= ffprobe_raw_capture3(*args)
-    end
-  end
-
   describe Media do
     let(:load) { true }
     let(:autoload) { true }

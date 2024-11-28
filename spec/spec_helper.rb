@@ -12,7 +12,17 @@ require 'uri'
 require 'webmock/rspec'
 require 'webrick'
 
-FFMPEG.logger = Logger.new(nil)
+module FFMPEG
+  class << self
+    alias ffprobe_raw_capture3 ffprobe_capture3
+
+    def ffprobe_capture3(*args)
+      cache_key = args.hash
+      @ffprobe_cache ||= {}
+      @ffprobe_cache[cache_key] ||= ffprobe_raw_capture3(*args)
+    end
+  end
+end
 
 RSpec.configure do |config|
   config.filter_run focus: true
@@ -94,4 +104,4 @@ def stop_web_server
 end
 
 FileUtils.rm_rf(tmp_dir)
-FileUtils.mkdir_p tmp_dir
+FileUtils.mkdir_p(tmp_dir)
