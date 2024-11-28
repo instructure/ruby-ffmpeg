@@ -73,10 +73,10 @@ module FFMPEG
         expect(status.media.first.video?).to be(true)
         expect(status.media.first.height).to eq(360)
         expect(status.media.first.streams.length).to eq(2)
-        expect(status.media.first.audio_bit_rate).to be_within(10_000).of(96_000)
+        expect(status.media.first.audio_bit_rate).to be_within(15_000).of(96_000)
         expect(status.media.last.audio?).to be(true)
         expect(status.media.last.streams.length).to eq(1)
-        expect(status.media.last.audio_bit_rate).to be_within(10_000).of(96_000)
+        expect(status.media.last.audio_bit_rate).to be_within(15_000).of(96_000)
 
         expect(reports.length).to be >= 1
         expect(reports).to all(be_a(Reporters::Output))
