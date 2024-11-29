@@ -16,6 +16,9 @@ module FFMPEG
     # The Scale class uses the scale filter
     # to resize a multimedia stream.
     class Scale < Filter
+      NEAREST_DIMENSION = -1
+      NEAREST_EVEN_DIMENSION = -2
+
       class << self
         # Returns a scale filter that fits the specified media
         # within the specified maximum width and height,
@@ -44,11 +47,11 @@ module FFMPEG
           return unless max_width || max_height
 
           if media.rotated?
-            width = max_height || -2
-            height = max_width || -2
+            width = max_height || NEAREST_EVEN_DIMENSION
+            height = max_width || NEAREST_EVEN_DIMENSION
           else
-            width = max_width || -2
-            height = max_height || -2
+            width = max_width || NEAREST_EVEN_DIMENSION
+            height = max_height || NEAREST_EVEN_DIMENSION
           end
 
           if width.negative? || height.negative?
