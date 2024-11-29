@@ -3,109 +3,106 @@
 require 'spec_helper'
 
 describe FFMPEG do
+  before do
+    described_class.instance_variable_set(:@logger, nil)
+    described_class.instance_variable_set(:@ffmpeg_binary, nil)
+    described_class.instance_variable_set(:@ffprobe_binary, nil)
+  end
+
+  after do
+    described_class.instance_variable_set(:@logger, nil)
+    described_class.instance_variable_set(:@ffmpeg_binary, nil)
+    described_class.instance_variable_set(:@ffprobe_binary, nil)
+  end
+
   describe '.logger' do
-    after do
-      FFMPEG.logger = Logger.new(nil)
+    it 'defaults to a Logger with info level' do
+      expect(described_class.logger).to be_instance_of(Logger)
+      expect(described_class.logger.level).to eq(Logger::INFO)
     end
+  end
 
-    it 'should be a Logger' do
-      expect(FFMPEG.logger).to be_instance_of(Logger)
-    end
-
-    it 'should be at info level' do
-      FFMPEG.logger = nil # Reset the logger so that we get the default
-      expect(FFMPEG.logger.level).to eq(Logger::INFO)
-    end
-
-    it 'should be assignable' do
-      new_logger = Logger.new($stdout)
-      FFMPEG.logger = new_logger
-      expect(FFMPEG.logger).to eq(new_logger)
+  describe '.logger=' do
+    it 'assigns the logger' do
+      logger = Logger.new($stdout)
+      described_class.logger = logger
+      expect(described_class.logger).to eq(logger)
     end
   end
 
   describe '.ffmpeg_binary' do
-    before do
-      FFMPEG.instance_variable_set(:@ffmpeg_binary, nil)
+    it 'defaults to finding from path' do
+      expect(described_class).to receive(:which).and_return('/path/to/ffmpeg')
+      expect(described_class.ffmpeg_binary).to eq('/path/to/ffmpeg')
+    end
+  end
+
+  describe '.ffmpeg_binary=' do
+    it 'assigns the ffmpeg binary' do
+      expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(true)
+      described_class.ffmpeg_binary = '/path/to/ffmpeg'
+      expect(described_class.ffmpeg_binary).to eq('/path/to/ffmpeg')
     end
 
-    after do
-      FFMPEG.instance_variable_set(:@ffmpeg_binary, nil)
+    context 'when the assigned value is not executable' do
+      it 'raises an error' do
+        expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(false)
+        expect { described_class.ffmpeg_binary = '/path/to/ffmpeg' }.to raise_error(Errno::ENOENT)
+      end
+    end
+  end
+
+  describe '.ffmpeg_execute' do
+    let(:args) { ['-i', fixture_media_file('hello.wav'), '-f', 'null', '/dev/null'] }
+
+    it 'returns the process status and yields reports' do
+      reports = []
+
+      status = described_class.ffmpeg_execute(*args) do |report|
+        reports << report
+      end
+
+      expect(status).to be_a(Process::Status)
+      expect(status.exitstatus).to eq(0)
+      expect(reports.length).to be >= 1
     end
 
-    it 'should default to finding from path' do
-      allow(FFMPEG).to receive(:which) { '/usr/local/bin/ffmpeg' }
-      allow(File).to receive(:executable?) { true }
-      expect(FFMPEG.ffmpeg_binary).to eq FFMPEG.which('ffmpeg')
-    end
+    context 'when ffmpeg hangs' do
+      before do
+        FFMPEG.io_timeout = 0.5
+        FFMPEG.ffmpeg_binary = fixture_file('bin/ffmpeg-hanging')
+      end
 
-    it 'should be assignable' do
-      allow(File).to receive(:executable?).with('/new/path/to/ffmpeg') { true }
-      FFMPEG.ffmpeg_binary = '/new/path/to/ffmpeg'
-      expect(FFMPEG.ffmpeg_binary).to eq '/new/path/to/ffmpeg'
-    end
+      after do
+        FFMPEG.remove_instance_variable(:@io_timeout)
+        FFMPEG.ffmpeg_binary = nil
+      end
 
-    it 'should raise exception if it cannot find assigned executable' do
-      expect { FFMPEG.ffmpeg_binary = '/new/path/to/ffmpeg' }.to raise_error(Errno::ENOENT)
-    end
-
-    it 'should raise exception if it cannot find executable on path' do
-      allow(File).to receive(:executable?) { false }
-      expect { FFMPEG.ffmpeg_binary }.to raise_error(Errno::ENOENT)
+      it 'raises Timeout::Error' do
+        expect { described_class.ffmpeg_execute(*args) }.to raise_error(Timeout::Error)
+      end
     end
   end
 
   describe '.ffprobe_binary' do
-    before do
-      FFMPEG.instance_variable_set(:@ffprobe_binary, nil)
-    end
-
-    after do
-      FFMPEG.instance_variable_set(:@ffprobe_binary, nil)
-    end
-
-    it 'should default to finding from path' do
-      allow(FFMPEG).to receive(:which) { '/usr/local/bin/ffprobe' }
-      allow(File).to receive(:executable?) { true }
-      expect(FFMPEG.ffprobe_binary).to eq FFMPEG.which('ffprobe')
-    end
-
-    it 'should be assignable' do
-      allow(File).to receive(:executable?).with('/new/path/to/ffprobe') { true }
-      FFMPEG.ffprobe_binary = '/new/path/to/ffprobe'
-      expect(FFMPEG.ffprobe_binary).to eq '/new/path/to/ffprobe'
-    end
-
-    it 'should raise exception if it cannot find assigned executable' do
-      expect { FFMPEG.ffprobe_binary = '/new/path/to/ffprobe' }.to raise_error(Errno::ENOENT)
-    end
-
-    it 'should raise exception if it cannot find executable on path' do
-      allow(File).to receive(:executable?) { false }
-      expect { FFMPEG.ffprobe_binary }.to raise_error(Errno::ENOENT)
+    it 'defaults to finding from path' do
+      expect(described_class).to receive(:which).and_return('/path/to/ffprobe')
+      expect(described_class.ffprobe_binary).to eq('/path/to/ffprobe')
     end
   end
 
-  describe '.max_http_redirect_attempts' do
-    after do
-      FFMPEG.max_http_redirect_attempts = nil
+  describe '.ffprobe_binary=' do
+    it 'assigns the ffprobe binary' do
+      expect(File).to receive(:executable?).with('/path/to/ffprobe').and_return(true)
+      described_class.ffprobe_binary = '/path/to/ffprobe'
+      expect(described_class.ffprobe_binary).to eq '/path/to/ffprobe'
     end
 
-    it 'should default to 10' do
-      expect(FFMPEG.max_http_redirect_attempts).to eq 10
-    end
-
-    it 'should be an Integer' do
-      expect { FFMPEG.max_http_redirect_attempts = 1.23 }.to raise_error(ArgumentError)
-    end
-
-    it 'should not be negative' do
-      expect { FFMPEG.max_http_redirect_attempts = -1 }.to raise_error(ArgumentError)
-    end
-
-    it 'should be assignable' do
-      FFMPEG.max_http_redirect_attempts = 5
-      expect(FFMPEG.max_http_redirect_attempts).to eq 5
+    context 'when the assigned value is not executable' do
+      it 'raises an error' do
+        expect(File).to receive(:executable?).with('/path/to/ffprobe').and_return(false)
+        expect { described_class.ffprobe_binary = '/path/to/ffprobe' }.to raise_error(Errno::ENOENT)
+      end
     end
   end
 end

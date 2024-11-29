@@ -1,54 +1,47 @@
 # frozen_string_literal: true
 
+require_relative '../filter'
+
 module FFMPEG
+  # rubocop:disable Style/Documentation
   module Filters
+    # rubocop:enable Style/Documentation
+
+    class << self
+      def silence_detect(threshold: nil, duration: nil, mono: nil)
+        SilenceDetect.new(threshold:, duration:, mono:)
+      end
+    end
+
     # The SilenceDetect class is uses the silencedetect filter
-    # to detect silent parts in a multimedia file.
-    class SilenceDetect
-      Range = Struct.new(:start, :end, :duration)
-
-      include Filter
-
+    # to detect silent parts in a multimedia stream.
+    class SilenceDetect < Filter
       attr_reader :threshold, :duration, :mono
 
-      def initialize(threshold: nil, duration: nil, mono: false)
+      def initialize(threshold: nil, duration: nil, mono: nil)
         if !threshold.nil? && !threshold.is_a?(Numeric) && !threshold.is_a?(String)
-          raise ArgumentError, 'Unknown threshold format, should be either Numeric or String'
+          raise ArgumentError, "Unknown threshold format #{threshold.class}, expected #{Numeric} or #{String}"
         end
 
-        raise ArgumentError, 'Unknown duration format, should be Numeric' if !duration.nil? && !duration.is_a?(Numeric)
+        if !duration.nil? && !duration.is_a?(Numeric)
+          raise ArgumentError, "Unknown duration format #{duration.class}, expected #{Numeric}"
+        end
+
+        if !mono.nil? && !mono.is_a?(TrueClass) && !mono.is_a?(FalseClass)
+          raise ArgumentError, "Unknown mono format #{mono.class}, expected #{TrueClass} or #{FalseClass}"
+        end
 
         @threshold = threshold
         @duration = duration
         @mono = mono
+
+        super(:audio, 'silencedetect')
       end
 
-      def self.scan(output)
-        result = []
+      protected
 
-        output.scan(/silence_end: (\d+\.\d+) \| silence_duration: (\d+\.\d+)/) do
-          e = Regexp.last_match(1).to_f
-          d = Regexp.last_match(2).to_f
-          result << Range.new(e - d, e, d)
-        end
-
-        result
-      end
-
-      def to_s
-        args = []
-        args << "n=#{@threshold}" if @threshold
-        args << "d=#{@duration}" if @duration
-        args << 'm=true' if @mono
-        args.empty? ? 'silencedetect' : "silencedetect=#{args.join(':')}"
-      end
-
-      def to_a
-        ['-af', to_s]
-      end
-
-      def scan(output)
-        self.class.scan(output)
+      def format_kwargs
+        super(n: @threshold, d: @duration, m: @mono)
       end
     end
   end

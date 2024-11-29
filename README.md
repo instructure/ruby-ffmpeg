@@ -3,253 +3,178 @@
 [![Test](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.test.yml/badge.svg?event=push)](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.test.yml)
 [![Lint](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.lint.yml/badge.svg?event=push)](https://github.com/instructure/ruby-ffmpeg/actions/workflows/ci.lint.yml)
 
-Simple yet powerful wrapper around the ffmpeg command for reading metadata and transcoding movies.
+Simple yet powerful wrapper around the ffmpeg command for reading metadata and transcoding media.
 
 ## Compatibility
 
 ### Ruby
 
-Only guaranteed to work with Ruby 3.0 or later.
+Only guaranteed to work with Ruby 3.1 or later.
 
 ### ffmpeg
 
-The current gem is tested against ffmpeg 4, 5 and 6. So no guarantees with earlier (or much later) 
+The current gem is tested against ffmpeg 4, 5, 6 and 7. So no guarantees with earlier (or much later) 
 versions. Output and input standards have inconveniently changed rather a lot between versions 
 of ffmpeg. Our goal is to keep this library in sync with new versions of ffmpeg as they come along.
 
 On macOS: `brew install ffmpeg`.
 
-## Usage
-
-### Require the gem
+## Installation
 
 ```ruby
 require 'ffmpeg', git: 'https://github.com/instructure/ruby-ffmpeg'
 ```
 
-### Reading Metadata
+## Usage
+
+NOTE: For advanced usage, don't be afraid to dive into the source code.
+The gem is designed with care and documented all over the place, so dig in.
+
+### Metadata
 
 ```ruby
-media = FFMPEG::Media.new('path/to/movie.mov')
+media = FFMPEG::Media.new('path/to/media.mp4')
 
-media.duration # 7.5 (duration of the media in seconds)
-media.bitrate # 481 (bitrate in kb/s)
-media.size # 455546 (filesize in bytes)
+media.valid? # true (would be false if ffmpeg fails to read the media metadata)
+media.local? # true (would be false if the file is remote)
+media.remote? # false
 
-media.video_overview # 'h264, yuv420p, 640x480 [PAR 1:1 DAR 4:3], 371 kb/s, 16.75 fps, 15 tbr, 600 tbn, 1200 tbc' (raw video stream info)
-media.video_codec_name # 'h264'
-media.color_space # 'yuv420p'
-media.resolution # '640x480'
-media.width # 640 (width of the video stream in pixels)
-media.height # 480 (height of the video stream in pixels)
-media.frame_rate # 16.72 (frames per second)
+media.streams # [FFMPEG::Stream, FFMPEG::Stream]
+media.video_streams # [FFMPEG::Stream]
+media.video_streams? # true (tells you if the media has video streams or not)
+media.default_video_stream # FFMPEG::Stream
+media.audio_streams # [FFMPEG::Stream]
+media.audio_streams? # true (tells you if the media has audio streams or not)
+media.default_audio_stream # FFMPEG::Stream
+media.video? # true (tells you if the media has a movie stream – non-attached-picture)
+media.audio? # false (tells you if the media is an audio file – based on the streams)
 
-media.audio_overview # 'aac, 44100 Hz, stereo, s16, 75 kb/s' (raw audio stream info)
-media.audio_codec_name # 'aac'
-media.audio_sample_rate # 44100
-media.audio_channels # 2
-
-media.video # FFMPEG::Stream
-# Multiple audio streams
-media.audio[0] # FFMPEG::Stream
-
-media.valid? # true (would be false if ffmpeg fails to read the movie)
+media.rotation # 90 (rotation of the default video stream in degrees)
+media.raw_width # 480 (the reported width of the default video stream in pixels)
+media.raw_height # 640 (the reported height of the default video stream in pixels)
+media.width # 640 (width of the default video stream in pixels)
+media.height # 480 (height of the default video stream in pixels)
 ```
+
+For the full list of attributes available on the `FFMPEG::Media` object,
+see the [source code](https://github.com/instructure/ruby-ffmpeg/blob/main/lib/ffmpeg/media.rb).
 
 ### Transcoding
 
-First argument is the output file path.
+The two core components of the transcoding process are the `FFMPEG::Preset` and `FFMPEG::Transcoder` classes.
 
+#### The `FFMPEG::Preset` class
 ```ruby
-media.transcode('path/to/new_movie.mp4') # Default ffmpeg settings for mp4 format
+preset = FFMPEG::Preset.new(
+  name: 'My Preset',
+  filename: '%<basename>s.mp4',
+  metadata: {
+    some_important_metadata_for_you: 'foo'
+  }
+) do
+  # This block sets up the output arguments of the ffmpeg command.
+  # It uses a DSL to define the arguments in a more human-readable way.
+  # The methods for the DSL are defined in the FFMPEG::RawCommandArgs and
+  # FFMPEG::CommandArgs classes.
+
+  video_codec_name 'libx264' # -c:v libx264
+  audio_codec_name 'aac' # -c:a aac
+  
+  # media is the FFMPEG::Media object used as input for the transcoding process
+  map media.video_mapping_id do # -map v:0
+    filter FFMPEG::Filters.scale(width: -2, height: 360) # -vf scale=w=-2:h=360
+    constant_rate_factor 22 # -crf 22
+    frame_rate 30 # -r 30
+  end
+
+  # media is the FFMPEG::Media object used as input for the transcoding process
+  map media.audio_mapping_id do # -map a:0
+    audio_bit_rate 128000 # -b:a 128k
+  end
+end
 ```
 
-Keep track of progress with an optional block.
-
+#### The `FFMPEG::Transcoder` class
 ```ruby
-media.transcode('path/to/new_movie.mp4') { |progress| puts progress } # 0.2 ... 0.5 ... 1.0
+transcoder = FFMPEG::Transcoder.new(
+  name: 'My Transcoder',
+  metadata: {
+    some_important_metadata_for_you: 'bar'
+  },
+  # You can pass multiple presets to the transcoder
+  # and they will be processed in a single ffmpeg command
+  # to optimize the transcoding process.
+  presets: [preset],
+  # The reporters are used to generate reports during the transcoding process.
+  reporters: [FFMPEG::Reporters::Progress, FFMPEG::Reporters::Silence]
+) do
+  # This block sets up the input arguments of the ffmpeg command.
+  # It uses the same DSL to define the arguments as the preset does for the output arguments.
+  # The methods for the DSL are defined in the FFMPEG::RawCommandArgs and
+  # FFMPEG::CommandArgs classes.
+
+  # media is the FFMPEG::Media object used as input for the transcoding process
+  if media.rotated?
+    raw_arg '-noautorotate' # -noautorotate
+  end
+end
+
+status = transcoder.process(media, '/path/to/output') do |report|
+  # This block is called for each report generated by the reporters
+  case report.class
+  when FFMPEG::Reporters::Progress
+    puts "Progress: #{report.time}"
+  when FFMPEG::Reporters::Silence
+    puts "Silence: #{report.duration}"
+  else
+    # FFMPEG::Reporters::Output
+  end
+end
+
+status.success? # true (would be false if ffmpeg fails to transcode the media)
+status.exitstatus # 0 (the exit status of the ffmpeg command)
+status.paths # ['/path/to/output.mp4'] (the paths of the output files)
+status.media # [FFMPEG::Media] (the media objects of the output files)
 ```
 
-Give custom command line options with an array.
+### Presets
 
-```ruby
-media.transcode('path/to/new_movie.mp4', %w(-ac aac -vc libx264 -ac 2 ...))
-```
+The gem comes with a few presets out of the box.
 
-Use the EncodingOptions parser for humanly readable transcoding options. Below you'll find most of the supported options.
-Note that the :custom key is an array so that it can be used for FFMpeg options like
-`-map` that can be repeated:
+You can find them in the `lib/ffmpeg/presets` directory.
 
-```ruby
-options = {
-  video_codec: 'libx264', frame_rate: 10, resolution: '320x240', video_bitrate: 300, video_bitrate_tolerance: 100,
-  aspect: 1.333333, keyframe_interval: 90, x264_vprofile: 'high', x264_preset: 'slow',
-  audio_codec: 'libfaac', audio_bitrate: 32, audio_sample_rate: 22050, audio_channels: 1,
-  threads: 2, custom: %w(-vf crop=60:60:10:10 -map 0:0 -map 0:1)
-}
+### Customization
 
-media.transcode('movie.mp4', options)
-```
-
-The transcode function returns a Movie object for the encoded file.
-
-```ruby
-new_media = media.transcode('path/to/new_movie.flv')
-
-new_media.video_codec_name # 'flv'
-new_media.audio_codec_name # 'mp3'
-```
-
-Aspect ratio is added to encoding options automatically if none is specified.
-
-```ruby
-options = { resolution: '320x180' } # Will add -aspect 1.77777777777778 to ffmpeg
-```
-
-Preserve aspect ratio on width or height by using the preserve_aspect_ratio transcoder option.
-
-```ruby
-media = FFMPEG::Media.new('path/to/movie.mov')
-
-options = { resolution: '320x240' }
-
-kwargs = { preserve_aspect_ratio: :width }
-media.transcode('movie.mp4', options, **kwargs) # Output resolution will be 320x180
-
-kwargs = { preserve_aspect_ratio: :height }
-media.transcode('movie.mp4', options, **kwargs) # Output resolution will be 426x240
-```
-
-For constant bitrate encoding use video_min_bitrate and video_max_bitrate with buffer_size.
-
-```ruby
-options = {video_min_bitrate: 600, video_max_bitrate: 600, buffer_size: 2000}
-media.transcode('path/to/new_movie.flv', options)
-```
-
-### Specifying Input Options
-
-To specify which options apply the input, such as changing the input framerate, use `input_options` hash
-in the transcoder kwargs.
-
-```ruby
-movie = FFMPEG::Media.new('path/to/movie.mov')
-
-kwargs = { input_options: { framerate: '1/5' } }
-movie.transcode('path/to/new_movie.mp4', {}, **kwargs)
-
-# FFMPEG Command will look like this:
-# ffmpeg -y -framerate 1/5 -i path/to/movie.mov movie.mp4
-```
-
-### Watermarking
-
-Add watermark image on the video.
-
-For example, you want to add a watermark on the video at right top corner with 10px padding.
-
-```ruby
-options = {
-  watermark: 'path/to/watermark.png', resolution: '640x360',
-  watermark_filter: { position: 'RT', padding_x: 10, padding_y: 10 }
-}
-```
-
-Position can be "LT" (Left Top Corner), "RT" (Right Top Corner), "LB" (Left Bottom Corner), "RB" (Right Bottom Corner).
-The watermark will not appear unless `watermark_filter` specifies the position. `padding_x` and `padding_y` default to
-`10`.
-
-### Taking Screenshots
-
-You can use the screenshot method to make taking screenshots a bit simpler.
-
-```ruby
-media.screenshot('path/to/new_screenshot.jpg')
-```
-
-The screenshot method has the very same API as transcode so the same options will work.
-
-```ruby
-media.screenshot('path/to/new_screenshot.bmp', { seek_time: 5, resolution: '320x240' })
-```
-
-To generate multiple screenshots in a single pass, specify `vframes` and a wildcard filename. Make
-sure to disable output file validation. The following code generates up to 20 screenshots every 10 seconds:
-
-```ruby
-media.screenshot('path/to/new_screenshot_%d.jpg', { vframes: 20, frame_rate: '1/6' }, validate: false)
-```
-
-To specify the quality when generating compressed screenshots (.jpg), use `quality` which specifies
-ffmpeg `-v:q` option. Quality is an integer between 1 and 31, where lower is better quality:
-
-```ruby
-media.screenshot('path/to/new_screenshot_%d.jpg', { quality: 3 })
-```
-
-You can preserve aspect ratio the same way as when using transcode.
-
-```ruby
-media.screenshot('path/to/new_screenshot.png', { seek_time: 2, resolution: '200x120' }, preserve_aspect_ratio: :width)
-```
-
-### Create a Slideshow from Stills
-Creating a slideshow from stills uses named sequences of files and stiches the result together in a slideshow
-video.
-
-Since there is no media to transcode, the Transcoder class needs to be used.
-
-```ruby
-slideshow_transcoder = FFMPEG::Transcoder.new(
-  'img_%03d.jpeg',
-  'slideshow.mp4',
-  { resolution: '320x240' },
-  input_options: { framerate: '1/5' }
-)
-
-slideshow = slideshow_transcoder.run
-# slideshow is a Movie object
-```
-
-Specify the path to ffmpeg
---------------------------
-
-By default, the gem assumes that the ffmpeg binary is available in the execution path and named ffmpeg and so will run commands that look something like `ffmpeg -i /path/to/input.file ...`. Use the FFMPEG.ffmpeg_binary setter to specify the full path to the binary if necessary:
+By default, the gem assumes that the ffmpeg and ffprobe binaries are available in the execution path (named ffmpeg and ffprobe)
+and so will run commands that look something like `ffmpeg -i /path/to/input.file ...`.
+Use the below setters to specify the full path to the binaries if necessary:
 
 ```ruby
 FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg'
+FFMPEG.ffprobe_binary = '/usr/local/bin/ffprobe'
 ```
 
-This will cause the same command to run as `/usr/local/bin/ffmpeg -i /path/to/input.file ...` instead.
+---
 
-
-Automatically kill hung processes
----------------------------------
-
-By default, the gem will wait for 30 seconds between IO feedback from the FFMPEG process. After which an error is logged and the process killed.
+By default, the gem will wait for 30 seconds between IO feedback from the FFMPEG process.
+After which an error is raised and the process killed.
 It is possible to modify this behaviour by setting a new default:
 
 ```ruby
-# Change the timeout
-Transcoder.timeout = 10
+# Change the IO timeout
+FFMPEG.io_timeout = 10
 
-# Disable the timeout altogether
-Transcoder.timeout = false
+# Disable the IO timeout altogether
+FFMPEG.io_timeout = nil
 ```
 
-Disabling output file validation
-------------------------------
+---
 
-By default Transcoder validates the output file, in case you use FFMPEG for HLS
-format that creates multiple outputs you can disable the validation by passing
-`validate: false` in the transcoder kwargs.
-
-Note that transcode will not return the encoded media object in this case since
-attempting to open a (possibly) invalid output file might result in an error being raised.
+The gem uses a logger to output debug information.
+By default, it will log to STDOUT, but you can change this behaviour by setting a new logger:
 
 ```ruby
-kwargs = { validate: false }
-media.transcode('movie.mp4', options, **kwargs) # returns nil
+FFMPEG.logger = Logger.new('path/to/logfile.log')
 ```
 
 Copyright

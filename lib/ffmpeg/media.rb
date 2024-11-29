@@ -1,272 +1,495 @@
 # frozen_string_literal: true
 
 require 'multi_json'
-require 'net/http'
 require 'uri'
-require 'tempfile'
+
+require_relative 'errors'
+require_relative 'stream'
 
 module FFMPEG
   # The Media class represents a multimedia file and provides methods
-  # to inspect and transcode it.
+  # to inspect its metadata.
   # It accepts a local path or remote URL to a multimedia file as input.
   # It uses ffprobe to get the streams and format of the multimedia file.
+  #
+  # @example
+  #  media = FFMPEG::Media.new('/path/to/media.mp4')
+  #  media.video? # => true
+  #  media.video_streams? # => true
+  #  media.audio? # => false
+  #  media.audio_streams? # => true
+  #  media.local? # => true
+  #
+  # @example
+  #  media = FFMPEG::Media.new('https://example.com/media.mp4', load: false)
+  #  media.loaded? # => false
+  #  media.video? # => true (loaded automatically)
+  #  media.loaded? # => true
+  #  media.remote? # => true
+  #
+  # @example
+  #  media = FFMPEG::Media.new('/path/to/media.mp4', load: false, autoload: false)
+  #  media.loaded? # => false
+  #  media.video? # => raises 'Media not loaded'
+  #  media.load!
+  #  media.video? # => true
   class Media
-    attr_reader :path, :size, :metadata, :streams, :tags,
-                :format_name, :format_long_name,
-                :start_time, :bitrate, :duration
+    class LoadError < FFMPEG::Error; end
 
-    def self.concat(output_path, *media)
-      raise ArgumentError, 'Unknown *media format, must be Array<Media>' unless media.all? { |m| m.is_a?(Media) }
-      raise ArgumentError, 'Invalid *media format, must contain more than one Media object' if media.length < 2
-      raise ArgumentError, 'Invalid *media format, has to be all valid Media objects' unless media.all?(&:valid?)
-      raise ArgumentError, 'Invalid *media format, has to be all local Media objects' unless media.all?(&:local?)
-
-      tempfile = Tempfile.open(%w[ffmpeg .txt])
-      tempfile.write(media.map { |m| "file '#{File.absolute_path(m.path)}'" }.join("\n"))
-      tempfile.close
-
-      options = { custom: %w[-c copy] }
-      kwargs = { input_options: %w[-safe 0 -f concat] }
-      Transcoder.new(tempfile.path, output_path, options, **kwargs).run
-    ensure
-      tempfile&.close
-      tempfile&.unlink
+    private_class_method def self.autoload(*method_names)
+      method_names.flatten!
+      method_names.each do |method_name|
+        method = instance_method(method_name)
+        define_method(method_name) do |*args, &block|
+          if loaded?
+            method.bind(self).call(*args, &block)
+          elsif @autoload
+            load!
+            method.bind(self).call(*args, &block)
+          else
+            raise 'Media not loaded'
+          end
+        end
+      end
     end
 
-    def initialize(path)
-      @path = path
+    attr_reader :path
 
-      # Check if the file exists and get its size
-      if remote?
-        response = FFMPEG.fetch_http_head(@path)
+    autoload attr_reader :size, :metadata, :streams, :tags,
+                         :format_name, :format_long_name,
+                         :start_time, :bit_rate, :duration
 
-        unless response.is_a?(Net::HTTPSuccess)
-          raise Errno::ENOENT,
-                "The file at '#{@path}' does not exist or is not available (response code: #{response.code})"
-        end
+    # @param path [String] The local path or remote URL to a multimedia file.
+    # @param ffprobe_args [Array<String>] Additional arguments to pass to ffprobe.
+    # @param load [Boolean] Whether to load the metadata immediately.
+    # @param autoload [Boolean] Whether to autoload the metadata when accessing attributes.
+    def initialize(path, *ffprobe_args, load: true, autoload: true)
+      @path = path.to_s
+      @ffprobe_args = ffprobe_args
+      @autoload = autoload
+      @loaded = false
+      @mutex = Mutex.new
+      load! if load
+    end
 
-        @size = response.content_length
-      else
-        raise Errno::ENOENT, "The file at '#{@path}' does not exist" unless File.exist?(@path)
+    # Load the metadata of the multimedia file.
+    #
+    # @return [Boolean]
+    def load!
+      @mutex.lock
 
-        @size = File.size(@path)
-      end
+      return @loaded if @loaded
 
-      # Run ffprobe to get the streams and format
-      stdout, stderr, _status = FFMPEG.ffprobe_capture3(
+      stdout, stderr, = FFMPEG.ffprobe_capture3(
         '-i', @path, '-print_format', 'json',
-        '-show_format', '-show_streams', '-show_error'
+        '-show_format', '-show_streams', '-show_error',
+        *@ffprobe_args
       )
 
-      # Parse ffprobe metadata
       begin
         @metadata = MultiJson.load(stdout, symbolize_keys: true)
-      rescue MultiJson::ParseError
-        raise "Could not parse output from FFProbe:\n#{stdout}"
+      rescue MultiJson::ParseError => e
+        raise LoadError, e.message.capitalize
       end
 
-      if @metadata.key?(:error) || stderr.include?('could not find codec parameters')
-        @invalid = true
-        return
+      if @metadata.key?(:error)
+        raise LoadError, "#{@metadata[:error][:string].capitalize} (code #{@metadata[:error][:code]})"
       end
 
-      @streams = @metadata[:streams].map { |stream| Stream.new(stream, stderr) }
+      @size = @metadata[:format][:size].to_i
+      @streams = @metadata[:streams].map { |metadata| Stream.new(metadata, stderr) }
       @tags = @metadata[:format][:tags]
 
       @format_name = @metadata[:format][:format_name]
       @format_long_name = @metadata[:format][:format_long_name]
 
       @start_time = @metadata[:format][:start_time].to_f
-      @bitrate = @metadata[:format][:bit_rate].to_i
+      @bit_rate = @metadata[:format][:bit_rate].to_i
       @duration = @metadata[:format][:duration].to_f
 
-      @invalid = @streams.all?(&:unsupported?)
+      @valid = @streams.any?(&:supported?)
+
+      @loaded = true
+    ensure
+      @mutex.unlock
     end
 
-    def valid?
-      !@invalid
+    # Whether the media has been loaded.
+    #
+    # @return [Boolean]
+    def loaded?
+      @loaded
     end
 
+    # Whether the media is on a remote URL.
+    #
+    # @return [Boolean]
     def remote?
       @remote ||= @path =~ URI::DEFAULT_PARSER.make_regexp(%w[http https]) ? true : false
     end
 
+    # Whether the media is at a local path.
+    #
+    # @return [Boolean]
     def local?
       !remote?
     end
 
-    def width
-      video&.width
+    # Whether the media is valid (there is at least one stream that is supported).
+    #
+    # @return [Boolean]
+    autoload def valid?
+      @valid
     end
 
-    def height
-      video&.height
+    # Returns all video streams.
+    #
+    # @return [Array<Stream>, nil]
+    autoload def video_streams
+      return @video_streams if instance_variable_defined?(:@video_streams)
+
+      @video_streams = @streams.select(&:video?)
     end
 
-    def rotation
-      video&.rotation
+    # Whether the media has video streams.
+    #
+    # @return [Boolean]
+    autoload def video_streams?
+      !video_streams.empty?
     end
 
-    def resolution
-      video&.resolution
+    # Whether the media has a video stream (excluding attached pictures).
+    #
+    # @return [Boolean]
+    autoload def video?
+      video_streams.any? { |stream| !stream.attached_pic? }
     end
 
-    def display_aspect_ratio
-      video&.display_aspect_ratio
+    # Returns the default video stream (if any).
+    #
+    # @return [Stream, nil]
+    autoload def default_video_stream
+      return @default_video_stream if instance_variable_defined?(:@default_video_stream)
+
+      @default_video_stream = video_streams.find(&:default?) || video_streams.first
     end
 
-    def sample_aspect_ratio
-      video&.sample_aspect_ratio
+    # Whether the media is rotated (based on the default video stream).
+    # (e.g. 90°, 180°, 270°)
+    #
+    # @return [Boolean]
+    autoload def rotated?
+      default_video_stream&.rotated? || false
     end
 
-    def calculated_aspect_ratio
-      video&.calculated_aspect_ratio
+    # Whether the media is portrait (based on the default video stream).
+    #
+    # @return [Boolean]
+    autoload def portrait?
+      default_video_stream&.portrait? || false
     end
 
-    def calculated_pixel_aspect_ratio
-      video&.calculated_pixel_aspect_ratio
+    # Whether the media is landscape (based on the default video stream).
+    #
+    # @return [Boolean]
+    autoload def landscape?
+      default_video_stream&.landscape? || false
     end
 
-    def color_range
-      video&.color_range
+    # Returns the width of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def width
+      default_video_stream&.width
     end
 
-    def color_space
-      video&.color_space
+    # Returns the raw (unrotated) width of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def raw_width
+      default_video_stream&.raw_width
     end
 
-    def frame_rate
-      video&.frame_rate
+    # Returns the height of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def height
+      default_video_stream&.height
     end
 
-    def frames
-      video&.frames
+    # Returns the raw (unrotated) height of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def raw_height
+      default_video_stream&.raw_height
     end
 
-    def video
-      @video ||= @streams&.find(&:video?)
+    # Returns the rotation of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def rotation
+      default_video_stream&.rotation
     end
 
-    def video?
-      !video.nil?
+    # Returns the resolution of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def resolution
+      default_video_stream&.resolution
     end
 
-    def video_only?
-      video? && !audio?
+    # Returns the display aspect ratio of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def display_aspect_ratio
+      default_video_stream&.display_aspect_ratio
     end
 
-    def video_index
-      video&.index
+    # Returns the sample aspect ratio of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def sample_aspect_ratio
+      default_video_stream&.sample_aspect_ratio
     end
 
-    def video_profile
-      video&.profile
+    # Returns the calculated aspect ratio of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def calculated_aspect_ratio
+      default_video_stream&.calculated_aspect_ratio
     end
 
-    def video_codec_name
-      video&.codec_name
+    # Returns the calculated pixel aspect ratio of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def calculated_pixel_aspect_ratio
+      default_video_stream&.calculated_pixel_aspect_ratio
     end
 
-    def video_codec_type
-      video&.codec_type
+    # Returns the color range of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def color_range
+      default_video_stream&.color_range
     end
 
-    def video_bitrate
-      video&.bitrate
+    # Returns the color space of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def color_space
+      default_video_stream&.color_space
     end
 
-    def video_overview
-      video&.overview
+    # Returns the frame rate (avg_frame_rate) of the default video stream (if any).
+    #
+    # @return [Float, nil]
+    autoload def frame_rate
+      default_video_stream&.frame_rate
     end
 
-    def video_tags
-      video&.tags
+    # Returns the number of frames of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def frames
+      default_video_stream&.frames
     end
 
-    def audio
-      @audio ||= @streams&.select(&:audio?)
+    # Returns the index of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def video_index
+      default_video_stream&.index
     end
 
-    def audio?
-      audio&.length&.positive?
+    # Returns the mapping index of the default video stream (if any).
+    # (Can be used as an output option for ffmpeg to select the video stream.)
+    #
+    # @return [Integer, nil]
+    autoload def video_mapping_index
+      video_streams.index(default_video_stream)
     end
 
-    def audio_only?
-      audio? && !video?
+    # Returns the mapping ID of the default video stream (if any).
+    # (Can be used as an output option for ffmpeg to select the video stream.)
+    # (e.g. "-map v:0" to select the first video stream.)
+    #
+    # @return [String, nil]
+    autoload def video_mapping_id
+      index = video_mapping_index
+      return if index.nil?
+
+      "v:#{index}"
     end
 
-    def audio_with_attached_pic?
-      audio? && video? && streams.select(&:video?).all?(&:attached_pic?)
+    # Returns the profile of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def video_profile
+      default_video_stream&.profile
     end
 
-    def silent?
-      !audio?
+    # Returns the codec name of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def video_codec_name
+      default_video_stream&.codec_name
     end
 
-    def audio_index
-      audio&.first&.index
+    # Returns the bit rate of the default video stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def video_bit_rate
+      default_video_stream&.bit_rate
     end
 
-    def audio_profile
-      audio&.first&.profile
+    # Returns the overview of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def video_overview
+      default_video_stream&.overview
     end
 
-    def audio_codec_name
-      audio&.first&.codec_name
+    # Returns the tags of the default video stream (if any).
+    #
+    # @return [Hash, nil]
+    autoload def video_tags
+      default_video_stream&.tags
     end
 
-    def audio_codec_type
-      audio&.first&.codec_type
+    # Returns all audio streams.
+    #
+    # @return [Array<Stream>, nil]
+    autoload def audio_streams
+      return @audio_streams if instance_variable_defined?(:@audio_streams)
+
+      @audio_streams = @streams.select(&:audio?)
     end
 
-    def audio_bitrate
-      audio&.first&.bitrate
+    # Whether the media has audio streams.
+    #
+    # @return [Boolean]
+    autoload def audio_streams?
+      audio_streams && !audio_streams.empty?
     end
 
-    def audio_channels
-      audio&.first&.channels
+    # Whether the media only contains audio streams and optional attached pictures.
+    #
+    # @return [Boolean]
+    autoload def audio?
+      audio_streams? && video_streams.all?(&:attached_pic?)
     end
 
-    def audio_channel_layout
-      audio&.first&.channel_layout
+    # Whether the media is silent (no audio streams).
+    #
+    # @return [Boolean]
+    autoload def silent?
+      !audio_streams?
     end
 
-    def audio_sample_rate
-      audio&.first&.sample_rate
+    # Returns the default audio stream (if any).
+    #
+    # @return [Stream, nil]
+    autoload def default_audio_stream
+      return @default_audio_stream if instance_variable_defined?(:@default_audio_stream)
+
+      @default_audio_stream = audio_streams.find(&:default?) || audio_streams.first
     end
 
-    def audio_overview
-      audio&.first&.overview
+    # Returns the index of the default audio stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def audio_index
+      default_audio_stream&.index
     end
 
-    def audio_tags
-      audio&.first&.tags
+    # Returns the mapping index of the default audio stream (if any).
+    # (Can be used as an output option for ffmpeg to select the audio stream.)
+    #
+    # @return [Integer, nil]
+    autoload def audio_mapping_index
+      audio_streams.index(default_audio_stream)
     end
 
-    def transcoder(output_path, options, **kwargs)
-      Transcoder.new(self, output_path, options, **kwargs)
+    # Returns the mapping ID of the default audio stream (if any).
+    # (Can be used as an output option for ffmpeg to select the audio stream.)
+    # (e.g. "-map a:0" to select the first audio stream.)
+    #
+    # @return [String, nil]
+    autoload def audio_mapping_id
+      index = audio_mapping_index
+      return if index.nil?
+
+      "a:#{index}"
     end
 
-    def transcode(output_path, options = EncodingOptions.new, **kwargs, &block)
-      transcoder(output_path, options, **kwargs).run(&block)
+    # Returns the profile of the default audio stream (if any).
+    #
+    # @return [String, nil]
+    autoload def audio_profile
+      default_audio_stream&.profile
     end
 
-    def screenshot(output_path, options = EncodingOptions.new, **kwargs, &block)
-      options = options.merge(screenshot: true)
-      transcode(output_path, options, **kwargs, &block)
+    # Returns the codec name of the default audio stream (if any).
+    #
+    # @return [String, nil]
+    autoload def audio_codec_name
+      default_audio_stream&.codec_name
     end
 
-    def cut(output_path, from, to, options = EncodingOptions.new, **kwargs)
-      kwargs[:input_options] ||= []
-      if kwargs[:input_options].is_a?(Array)
-        kwargs[:input_options] << '-to'
-        kwargs[:input_options] << to.to_s
-      elsif kwargs[:input_options].is_a?(Hash)
-        kwargs[:input_options][:to] = to
+    # Returns the bit rate of the default audio stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def audio_bit_rate
+      default_audio_stream&.bit_rate
+    end
+
+    # Returns the channels of the default audio stream (if any).
+    #
+    # @return [String, nil]
+    autoload def audio_channels
+      default_audio_stream&.channels
+    end
+
+    # Returns the channel layout of the default audio stream (if any).
+    #
+    # @return [String, nil]
+    autoload def audio_channel_layout
+      default_audio_stream&.channel_layout
+    end
+
+    # Returns the sample rate of the default audio stream (if any).
+    #
+    # @return [Integer, nil]
+    autoload def audio_sample_rate
+      default_audio_stream&.sample_rate
+    end
+
+    # Returns the overview of the default audio stream (if any).
+    #
+    # @return [String, nil]
+    autoload def audio_overview
+      default_audio_stream&.overview
+    end
+
+    # Returns the tags of the default audio stream (if any).
+    #
+    # @return [Hash, nil]
+    autoload def audio_tags
+      default_audio_stream&.tags
+    end
+
+    # Execute a ffmpeg command with the media as input.
+    #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @param inargs [Array<String>] The arguments to pass before the input.
+    # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
+    # @return [Process::Status]
+    def ffmpeg_execute(*args, inargs: [], reporters: nil, &block)
+      if reporters.is_a?(Array)
+        FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, reporters: reporters, &block)
+      else
+        FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, &block)
       end
-
-      options = options.merge(seek_time: from)
-      transcode(output_path, options, **kwargs)
     end
   end
 end
