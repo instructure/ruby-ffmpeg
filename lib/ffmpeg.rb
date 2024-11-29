@@ -64,7 +64,9 @@ module FFMPEG
     #
     # @return [Integer]
     def io_timeout
-      @io_timeout ||= 30
+      return @io_timeout if defined?(@io_timeout)
+
+      @io_timeout = 30
     end
 
     # Set the path to the ffmpeg binary.

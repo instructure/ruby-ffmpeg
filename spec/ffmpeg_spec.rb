@@ -74,7 +74,7 @@ describe FFMPEG do
       end
 
       after do
-        FFMPEG.io_timeout = nil
+        FFMPEG.remove_instance_variable(:@io_timeout)
         FFMPEG.ffmpeg_binary = nil
       end
 
