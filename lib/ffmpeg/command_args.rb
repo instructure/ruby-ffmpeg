@@ -122,30 +122,33 @@ module FFMPEG
     private
 
     def min_bit_rate(*values)
-      "#{(values.map do |value|
-        next value if value.is_a?(Integer)
+      bit_rate =
+        values.map do |value|
+          next value if value.is_a?(Integer)
 
-        unless value.is_a?(String)
-          raise ArgumentError,
-                "Unknown bit rate format #{value.class}, expected #{Integer} or #{String}"
-        end
+          unless value.is_a?(String)
+            raise ArgumentError,
+                  "Unknown bit rate format #{value.class}, expected #{Integer} or #{String}"
+          end
 
-        match = value.match(/\A([1-9]\d*)([kM])\z/)
-        unless match
-          raise ArgumentError,
-                "Unknown bit rate format #{value}, expected [1-9]\\d*[kM]"
-        end
+          match = value.match(/\A([1-9]\d*)([kM])\z/)
+          unless match
+            raise ArgumentError,
+                  "Unknown bit rate format #{value}, expected [1-9]\\d*[kM]"
+          end
 
-        value = match[1].to_i
-        case match[2]
-        when 'k'
-          value * 1_000
-        when 'M'
-          value * 1_000_000
-        else
-          value
-        end
-      end.min.to_f / 1000).round}k"
+          value = match[1].to_i
+          case match[2]
+          when 'k'
+            value * 1_000
+          when 'M'
+            value * 1_000_000
+          else
+            value
+          end
+        end.min
+
+      "#{(bit_rate.to_f / 1000).round}k"
     end
   end
 end
