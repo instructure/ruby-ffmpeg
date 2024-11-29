@@ -7,7 +7,7 @@ module FFMPEG
     # Represents a silence report from ffmpeg.
     class Silence < Output
       def self.match?(line)
-        line =~ /^\[silencedetect @ \w+\]/ ? true : false
+        line.match?(/^\[silencedetect @ \w+\]/)
       end
 
       # Returns the ID of the filter.

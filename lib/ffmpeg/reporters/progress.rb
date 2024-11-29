@@ -7,7 +7,7 @@ module FFMPEG
     # Represents the progress of an encoding operation.
     class Progress < Output
       def self.match?(line)
-        line =~ /^\s*frame=/ ? true : false
+        line.match?(/^\s*frame=/)
       end
 
       # Returns the current frame number.
