@@ -43,7 +43,7 @@ module FFMPEG
     # Transcode the media to the output path.
     #
     # @param media [Media] The media to transcode.
-    # @param output_path [String] The path to the output file.
+    # @param output_path [String, Pathname] The path to the output file.
     # @yield The block to execute when progress is made.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
     def transcode(media, output_path, &)

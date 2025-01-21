@@ -109,6 +109,7 @@ module FFMPEG
 
     # Safely captures the standard output and the standard error of the ffmpeg command.
     #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     def ffmpeg_capture3(*args)
       logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
@@ -120,6 +121,7 @@ module FFMPEG
     # and the standard error streams, as well as the child process
     # to the specified block.
     #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
@@ -177,6 +179,7 @@ module FFMPEG
 
     # Safely captures the standard output and the standard error of the ffmpeg command.
     #
+    # @param args [Array<String>] The arguments to pass to ffprobe.
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_capture3(*args)
@@ -189,6 +192,7 @@ module FFMPEG
     # and the standard error streams, as well as the child process
     # to the specified block.
     #
+    # @param args [Array<String>] The arguments to pass to ffprobe.
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
