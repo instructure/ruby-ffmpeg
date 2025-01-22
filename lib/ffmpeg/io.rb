@@ -21,7 +21,7 @@ module FFMPEG
       end
 
       def encode!(string)
-        string.encode(encoding, invalid: :replace, undef: :replace)
+        string.encode!(encoding, invalid: :replace, undef: :replace)
       end
 
       def extend!(io)
