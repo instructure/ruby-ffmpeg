@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/instructure/ffmpeg'
   s.summary     = 'Wraps ffmpeg to read metadata and transcodes videos.'
 
-  s.required_ruby_version = '>= 3.1'
+  s.required_ruby_version = '>= 3.2'
 
   s.add_dependency('multi_json', '~> 1.8')
 

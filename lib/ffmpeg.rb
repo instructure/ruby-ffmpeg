@@ -3,7 +3,6 @@
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'logger'
-require 'open3'
 
 require_relative 'ffmpeg/command_args'
 require_relative 'ffmpeg/errors'
@@ -38,18 +37,20 @@ if RUBY_PLATFORM =~ /(win|w)(32|64)$/
   end
 end
 
-# The FFMPEG module allows you to customise the behaviour of the FFMPEG library.
+# The FFMPEG module allows you to customise the behaviour of the FFMPEG library,
+# and provides a set of methods to directly interact with the ffmpeg and ffprobe binaries.
 #
 # @example
 #   FFMPEG.logger = Logger.new($stdout)
 #   FFMPEG.io_timeout = 60
+#   FFMPEG.io_encoding = Encoding::UTF_8
 #   FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg'
 #   FFMPEG.ffprobe_binary = '/usr/local/bin/ffprobe'
 module FFMPEG
   SIGKILL = RUBY_PLATFORM =~ /(win|w)(32|64)$/ ? 1 : 'SIGKILL'
 
   class << self
-    attr_writer :logger, :io_timeout
+    attr_writer :logger
 
     # Get the FFMPEG logger.
     #
@@ -59,14 +60,29 @@ module FFMPEG
     end
 
     # Get the timeout that's used when waiting for ffmpeg output.
-    # This timeout is used by ffmpeg_execute calls and the Transcoder class.
     # Defaults to 30 seconds.
     #
     # @return [Integer]
     def io_timeout
-      return @io_timeout if defined?(@io_timeout)
+      FFMPEG::IO.timeout
+    end
 
-      @io_timeout = 30
+    # Set the timeout that's used when waiting for ffmpeg output.
+    def io_timeout=(timeout)
+      FFMPEG::IO.timeout = timeout
+    end
+
+    # Get the encoding that's used when reading ffmpeg output.
+    # Defaults to UTF-8.
+    #
+    # @return [Encoding]
+    def io_encoding
+      FFMPEG::IO.encoding
+    end
+
+    # Set the encoding that's used when reading ffmpeg output.
+    def io_encoding=(encoding)
+      FFMPEG::IO.encoding = encoding
     end
 
     # Set the path to the ffmpeg binary.
@@ -93,13 +109,11 @@ module FFMPEG
 
     # Safely captures the standard output and the standard error of the ffmpeg command.
     #
-    # @return [Array] The standard output, the standard error, and the process status.
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     def ffmpeg_capture3(*args)
       logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
-      stdout, stderr, status = Open3.capture3(ffmpeg_binary, '-y', *args)
-      FFMPEG::IO.encode!(stdout)
-      FFMPEG::IO.encode!(stderr)
-      [stdout, stderr, status]
+      FFMPEG::IO.capture3(ffmpeg_binary, '-y', *args)
     end
 
     # Starts a new ffmpeg process with the given arguments.
@@ -107,20 +121,15 @@ module FFMPEG
     # and the standard error streams, as well as the child process
     # to the specified block.
     #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
     # @yieldparam wait_thr (+Thread+) The child process thread.
-    # @return [void]
-    def ffmpeg_popen3(*args, &block)
+    # @return [Process::Status, Array<IO, Thread>]
+    def ffmpeg_popen3(*args, &)
       logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
-      Open3.popen3(ffmpeg_binary, '-y', *args) do |stdin, stdout, stderr, wait_thr|
-        block.call(stdin, FFMPEG::IO.new(stdout), FFMPEG::IO.new(stderr), wait_thr)
-      rescue StandardError
-        wait_thr.kill
-        wait_thr.join
-        raise
-      end
+      FFMPEG::IO.popen3(ffmpeg_binary, '-y', *args, &)
     end
 
     # Execute a ffmpeg command.
@@ -131,12 +140,13 @@ module FFMPEG
     # @return [Process::Status]
     def ffmpeg_execute(*args, reporters: [Reporters::Progress])
       ffmpeg_popen3(*args) do |_stdin, _stdout, stderr, wait_thr|
-        stderr.each do |line|
+        stderr.each(chomp: true) do |line|
           next unless block_given?
 
           reporter = reporters.find { |r| r.match?(line) }
           reporter ||= Reporters::Output
           report = reporter.new(line)
+
           yield report
         end
 
@@ -169,14 +179,12 @@ module FFMPEG
 
     # Safely captures the standard output and the standard error of the ffmpeg command.
     #
-    # @return [Array] The standard output, the standard error, and the process status.
+    # @param args [Array<String>] The arguments to pass to ffprobe.
+    # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_capture3(*args)
       logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
-      stdout, stderr, status = Open3.capture3(ffprobe_binary, '-y', *args)
-      FFMPEG::IO.encode!(stdout)
-      FFMPEG::IO.encode!(stderr)
-      [stdout, stderr, status]
+      FFMPEG::IO.capture3(ffprobe_binary, '-y', *args)
     end
 
     # Starts a new ffprobe process with the given arguments.
@@ -184,20 +192,15 @@ module FFMPEG
     # and the standard error streams, as well as the child process
     # to the specified block.
     #
+    # @param args [Array<String>] The arguments to pass to ffprobe.
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
-    # @return [void]
+    # @return [Process::Status, Array<IO, Thread>]
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
-    def ffprobe_popen3(*args, &block)
+    def ffprobe_popen3(*args, &)
       logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
-      Open3.popen3(ffprobe_binary, '-y', *args) do |stdin, stdout, stderr, wait_thr|
-        block.call(stdin, FFMPEG::IO.new(stdout), FFMPEG::IO.new(stderr), wait_thr)
-      rescue StandardError
-        wait_thr.kill
-        wait_thr.join
-        raise
-      end
+      FFMPEG::IO.popen3(ffprobe_binary, '-y', *args, &)
     end
 
     # Cross-platform way of finding an executable in the $PATH.

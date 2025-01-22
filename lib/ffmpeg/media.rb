@@ -59,7 +59,7 @@ module FFMPEG
                          :format_name, :format_long_name,
                          :start_time, :bit_rate, :duration
 
-    # @param path [String] The local path or remote URL to a multimedia file.
+    # @param path [String, Pathname, URI] The local path or remote URL to a multimedia file.
     # @param ffprobe_args [Array<String>] Additional arguments to pass to ffprobe.
     # @param load [Boolean] Whether to load the metadata immediately.
     # @param autoload [Boolean] Whether to autoload the metadata when accessing attributes.

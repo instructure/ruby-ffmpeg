@@ -18,7 +18,7 @@ module FFMPEG
         metadata: nil,
         &
       )
-        super(name:, filename:, metadata:) do
+        super do
           format_name 'dash'
           adaptation_sets 'id=0,streams=v id=1,streams=a'
           segment_duration 2

@@ -67,8 +67,8 @@ module FFMPEG
 
     # Transcodes the media file using the preset configurations.
     #
-    # @param media [String, FFMPEG::Media] The media file to transcode.
-    # @param output_path [String] The output path to save the transcoded files.
+    # @param media [String, Pathname, URI, FFMPEG::Media] The media file to transcode.
+    # @param output_path [String, Pathname] The output path to save the transcoded files.
     # @yield The block to execute to report the transcoding process.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
     def process(media, output_path, &)

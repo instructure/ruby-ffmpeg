@@ -1,4 +1,30 @@
+== 7.0.0-beta.1 2025-01-22
+
+Fixes:
+* Some incorrect or incomplete documentation comments.
+
+Improvements:
+* Added non-blocking popen3 methods for both ffmpeg and ffprobe.
+* Improved IO handling for ffmpeg and ffprobe processes.
+
+Breaking Changes:
+* Dropped support for Ruby 3.1, Ruby 3.2 is now the minimum supported version.
+
+== 7.0.0-beta 2024-11-29
+
+Breaking Changes:
+* Added new, more powerful (though less extensible) DSL to build ffmpeg commands.
+* Introduced new concept of long-lived presets and transcoders.
+* Removed full output storage during the transcoding process.
+* Added built-in presets that can be used out-of-the-box:
+  * H.264 360p all the way up to 4K resolution.
+  * AAC 128k all the way up to 320k bit rate.
+  * DASH H.264 360p all the way up to 4K resolution.
+  * DASH AAC 128k all the way up to 320k bit rate.
+* Dropped support for Ruby 3.0, Ruby 3.1 is now the minimum supported version.
+
 == 6.1.2 2024-11-07
+
 Fixes:
 * Calculate rotation correctly for media files with multiple side data elements
 
@@ -9,6 +35,7 @@ Fixes:
 
 == 6.1.0 2024-10-24
 
+Improvements:
 * Added new `default?` and `attached_pic?` helper methods to FFMPEG::Stream objects
 * Added new `audio_with_attached_pic?` helper method to FFMPEG::Media objects
 

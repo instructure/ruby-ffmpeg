@@ -1,39 +1,68 @@
 # frozen_string_literal: true
 
 require 'English'
-require 'timeout'
-
-require_relative 'timeout'
+require 'open3'
 
 module FFMPEG
-  # The IO class is a simple wrapper around IO objects that adds a timeout
-  # to all read operations and fixes encoding issues.
-  class IO
-    attr_accessor :timeout
+  # The IO module provides low-level methods for opening, capturing, and encoding
+  # IO streams produced by the ffmpeg and ffprobe binaries.
+  module IO
+    class << self
+      attr_writer :timeout, :encoding
 
-    def self.encode!(chunk)
-      chunk[/test/]
-    rescue ArgumentError
-      chunk.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?')
+      def timeout
+        return @timeout if defined?(@timeout)
+
+        @timeout = 30
+      end
+
+      def encoding
+        @encoding ||= Encoding::UTF_8
+      end
+
+      def encode!(string)
+        string.encode!(encoding, invalid: :replace, undef: :replace)
+      end
+
+      def extend!(io)
+        io.timeout = timeout
+        io.set_encoding(encoding, invalid: :replace, undef: :replace)
+        io.extend(FFMPEG::IO)
+      end
+
+      def capture3(*cmd)
+        *io, status = Open3.capture3(*cmd)
+        io.each(&method(:encode!))
+        [*io, status]
+      end
+
+      def popen3(*cmd, &block)
+        if block_given?
+          Open3.popen3(*cmd) do |*io, wait_thr|
+            io = io.map(&method(:extend!))
+            block.call(*io, wait_thr)
+          rescue StandardError
+            wait_thr.kill
+            wait_thr.join
+            raise
+          end
+        else
+          *io, wait_thr = Open3.popen3(*cmd)
+          io = io.map(&method(:extend!))
+          [*io, wait_thr]
+        end
+      end
     end
 
-    def initialize(target)
-      @target = target
-      @timeout = FFMPEG.io_timeout
-    end
-
-    def each(&block)
-      timer = timeout.nil? ? nil : Timeout.start(timeout)
+    def each(chomp: false, &block)
       buffer = String.new
 
       until eof?
         char = getc
         case char
-        when "\n", "\r"
-          timer&.tick
-          timer&.pause
-          block.call(buffer)
-          timer&.resume
+        when "\r", "\n"
+          buffer << ($ORS || "\n") unless chomp
+          block.call(buffer) unless buffer.empty?
           buffer = String.new
         else
           buffer << char
@@ -41,54 +70,6 @@ module FFMPEG
       end
 
       block.call(buffer) unless buffer.empty?
-    ensure
-      timer&.cancel
-    end
-
-    %i[
-      getc
-      gets
-      readchar
-      readline
-    ].each do |symbol|
-      define_method(symbol) do |*args|
-        data = @target.send(symbol, *args)
-        self.class.encode!(data) unless data.nil?
-        data
-      end
-    end
-
-    %i[
-      each_char
-      each_line
-    ].each do |symbol|
-      define_method(symbol) do |*args, &block|
-        timer = timeout.nil? ? nil : Timeout.start(timeout)
-        @target.send(symbol, *args) do |data|
-          timer&.tick
-          timer&.pause
-          block.call(self.class.encode!(data))
-          timer&.resume
-        end
-      ensure
-        timer&.cancel
-      end
-    end
-
-    def readlines(*args)
-      lines = []
-      each(*args) { |line| lines << line }
-      lines
-    end
-
-    private
-
-    def respond_to_missing?(symbol, include_private = false)
-      @target.respond_to?(symbol, include_private)
-    end
-
-    def method_missing(symbol, *args)
-      @target.send(symbol, *args)
     end
   end
 end
