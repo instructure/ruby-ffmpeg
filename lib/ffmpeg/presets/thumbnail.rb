@@ -13,14 +13,16 @@ module FFMPEG
         filename: '%<basename>s.thumb.jpg',
         metadata: nil,
         max_width: nil,
-        max_height: nil
+        max_height: nil,
+        &
       )
         Thumbnail.new(
           name:,
           filename:,
           metadata:,
           max_width: max_width,
-          max_height: max_height
+          max_height: max_height,
+          &
         )
       end
     end
@@ -49,6 +51,8 @@ module FFMPEG
         preset = self
 
         super(name:, filename:, metadata:) do
+          instance_exec(&) if block_given?
+
           arg 'ss', (media.duration / 2).floor if media.duration.is_a?(Numeric)
           arg 'frames:v', 1
           filter preset.scale_filter(media)

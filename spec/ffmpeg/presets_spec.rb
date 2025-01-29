@@ -45,7 +45,7 @@ module FFMPEG
       ),
       PresetTest.new(
         name: 'DASH H.264 4K 30 FPS',
-        preset: Presets::DASH.h264_4k(uhd_frame_rate: 30, hd_frame_rate: 60, sd_frame_rate: 30),
+        preset: Presets::DASH.h264_4k,
         assert: lambda do |media|
           expect(media.path).to match(/\.mpd\z/)
           expect(media.streams.length).to be(5)
