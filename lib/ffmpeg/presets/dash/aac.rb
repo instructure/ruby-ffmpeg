@@ -11,39 +11,51 @@ module FFMPEG
         def aac_128k(
           name: 'DASH AAC 128k',
           filename: '%<basename>s.mpd',
-          metadata: nil
+          metadata: nil,
+          segment_duration: 2,
+          &
         )
           AAC.new(
             name:,
             filename:,
             metadata:,
-            audio_bit_rate: '128k'
+            segment_duration:,
+            audio_bit_rate: '128k',
+            &
           )
         end
 
         def aac_192k(
           name: 'DASH AAC 192k',
           filename: '%<basename>s.mpd',
-          metadata: nil
+          metadata: nil,
+          segment_duration: 2,
+          &
         )
           AAC.new(
             name:,
             filename:,
             metadata:,
-            audio_bit_rate: '192k'
+            segment_duration:,
+            audio_bit_rate: '192k',
+            &
           )
         end
 
         def aac_320k(
           name: 'DASH AAC 320k',
           filename: '%<basename>s.mpd',
-          metadata: nil
+          metadata: nil,
+          segment_duration: 2,
+          &
         )
           AAC.new(
             name:,
             filename:,
             metadata:,
-            audio_bit_rate: '320k'
+            segment_duration:,
+            audio_bit_rate: '320k',
+            &
           )
         end
       end
@@ -61,13 +73,14 @@ module FFMPEG
           name: nil,
           filename: nil,
           metadata: nil,
+          segment_duration: 2,
           audio_bit_rate: '128k',
           &
         )
           @audio_bit_rate = audio_bit_rate
           preset = self
 
-          super(name:, filename:, metadata:) do
+          super(name:, filename:, metadata:, segment_duration:) do
             audio_codec_name 'aac'
 
             instance_exec(&) if block_given?

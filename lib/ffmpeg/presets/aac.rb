@@ -10,39 +10,45 @@ module FFMPEG
       def aac_128k(
         name: 'AAC 128k',
         filename: '%<basename>s.aac',
-        metadata: nil
+        metadata: nil,
+        &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
-          audio_bit_rate: '128k'
+          audio_bit_rate: '128k',
+          &
         )
       end
 
       def aac_192k(
         name: 'AAC 192k',
         filename: '%<basename>s.aac',
-        metadata: nil
+        metadata: nil,
+        &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
-          audio_bit_rate: '192k'
+          audio_bit_rate: '192k',
+          &
         )
       end
 
       def aac_320k(
         name: 'AAC 320k',
         filename: '%<basename>s.aac',
-        metadata: nil
+        metadata: nil,
+        &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
-          audio_bit_rate: '320k'
+          audio_bit_rate: '320k',
+          &
         )
       end
     end

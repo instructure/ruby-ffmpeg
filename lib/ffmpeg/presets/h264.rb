@@ -8,135 +8,227 @@ module FFMPEG
   module Presets
     # rubocop:enable Style/Documentation
     class << self
-      def h264_360p(
-        name: 'H.264 360p',
-        filename: '%<basename>s.360p.mp4',
+      def h264_144p(
+        name: 'H.264 144p',
+        filename: '%<basename>s.144p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'ultrafast',
         video_profile: 'baseline',
         frame_rate: 30,
         constant_rate_factor: 28,
-        pixel_format: 'yuv420p'
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
+          video_preset:,
+          video_profile:,
+          frame_rate:,
+          constant_rate_factor:,
+          pixel_format:,
+          max_width: 256,
+          max_height: 144,
+          &
+        )
+      end
+
+      def h264_240p(
+        name: 'H.264 240p',
+        filename: '%<basename>s.240p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
+        video_preset: 'ultrafast',
+        video_profile: 'baseline',
+        frame_rate: 30,
+        constant_rate_factor: 28,
+        pixel_format: 'yuv420p',
+        &
+      )
+        H264.new(
+          name:,
+          filename:,
+          metadata:,
+          audio_bit_rate:,
+          video_preset:,
+          video_profile:,
+          frame_rate:,
+          constant_rate_factor:,
+          pixel_format:,
+          max_width: 426,
+          max_height: 240,
+          &
+        )
+      end
+
+      def h264_360p(
+        name: 'H.264 360p',
+        filename: '%<basename>s.360p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
+        video_preset: 'ultrafast',
+        video_profile: 'baseline',
+        frame_rate: 30,
+        constant_rate_factor: 28,
+        pixel_format: 'yuv420p',
+        &
+      )
+        H264.new(
+          name:,
+          filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 640,
-          max_height: 360
+          max_height: 360,
+          &
         )
       end
 
       def h264_480p(
         name: 'H.264 480p',
         filename: '%<basename>s.480p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'main',
         frame_rate: 30,
-        constant_rate_factor: 26,
-        pixel_format: 'yuv420p'
+        constant_rate_factor: 27,
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 854,
-          max_height: 480
+          max_height: 480,
+          &
         )
       end
 
       def h264_720p(
         name: 'H.264 720p',
         filename: '%<basename>s.720p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
-        frame_rate: 30,
-        constant_rate_factor: 24,
-        pixel_format: 'yuv420p'
+        frame_rate: 60,
+        constant_rate_factor: 27,
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 1280,
-          max_height: 720
+          max_height: 720,
+          &
         )
       end
 
       def h264_1080p(
         name: 'H.264 1080p',
         filename: '%<basename>s.1080p.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
-        frame_rate: 30,
-        constant_rate_factor: 23,
-        pixel_format: 'yuv420p'
+        frame_rate: 60,
+        constant_rate_factor: 27,
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 1920,
-          max_height: 1080
+          max_height: 1080,
+          &
         )
       end
 
       def h264_1440p(
         name: 'H.264 2K',
         filename: '%<basename>s.2k.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
-        frame_rate: 30,
-        constant_rate_factor: 23,
-        pixel_format: 'yuv420p'
+        frame_rate: 60,
+        constant_rate_factor: 26,
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 2560,
-          max_height: 1440
+          max_height: 1440,
+          &
         )
       end
 
       def h264_4k(
         name: 'H.264 4K',
         filename: '%<basename>s.4k.mp4',
+        metadata: nil,
+        audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
-        frame_rate: 30,
-        constant_rate_factor: 23,
-        pixel_format: 'yuv420p'
+        frame_rate: 60,
+        constant_rate_factor: 26,
+        pixel_format: 'yuv420p',
+        &
       )
         H264.new(
           name:,
           filename:,
+          metadata:,
+          audio_bit_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
           constant_rate_factor:,
           pixel_format:,
           max_width: 3840,
-          max_height: 2160
+          max_height: 2160,
+          &
         )
       end
     end
