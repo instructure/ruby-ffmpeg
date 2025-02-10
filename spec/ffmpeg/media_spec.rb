@@ -88,7 +88,7 @@ module FFMPEG
           before { allow(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, '', nil]) }
 
           it 'raises an error' do
-            expect { subject.load! }.to raise_error(described_class::LoadError, /\bunexpected token\b/i)
+            expect { subject.load! }.to raise_error(described_class::LoadError, /\bunexpected (character|token)\b/i)
           end
         end
 
