@@ -25,6 +25,7 @@ require_relative 'ffmpeg/raw_command_args'
 require_relative 'ffmpeg/reporters/output'
 require_relative 'ffmpeg/reporters/progress'
 require_relative 'ffmpeg/reporters/silence'
+require_relative 'ffmpeg/status'
 require_relative 'ffmpeg/transcoder'
 require_relative 'ffmpeg/version'
 
@@ -50,7 +51,7 @@ module FFMPEG
   SIGKILL = RUBY_PLATFORM =~ /(win|w)(32|64)$/ ? 1 : 'SIGKILL'
 
   class << self
-    attr_writer :logger
+    attr_writer :logger, :reporters
 
     # Get the FFMPEG logger.
     #
@@ -83,6 +84,11 @@ module FFMPEG
     # Set the encoding that's used when reading ffmpeg output.
     def io_encoding=(encoding)
       FFMPEG::IO.encoding = encoding
+    end
+
+    # Get the reporters that are used by default to parse the output of the ffmpeg command.
+    def reporters
+      @reporters ||= [FFMPEG::Reporters::Progress]
     end
 
     # Set the path to the ffmpeg binary.
@@ -137,21 +143,38 @@ module FFMPEG
     # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
-    # @return [Process::Status]
-    def ffmpeg_execute(*args, reporters: [Reporters::Progress])
-      ffmpeg_popen3(*args) do |_stdin, _stdout, stderr, wait_thr|
-        stderr.each(chomp: true) do |line|
-          next unless block_given?
+    # @return [FFMPEG::Status]
+    def ffmpeg_execute(*args, status: nil, reporters: nil)
+      status ||= FFMPEG::Status.new
+      reporters ||= self.reporters
 
-          reporter = reporters.find { |r| r.match?(line) }
-          reporter ||= Reporters::Output
-          report = reporter.new(line)
+      status.bind!(
+        ffmpeg_popen3(*args) do |_stdin, stdout, stderr, wait_thr|
+          stderr.each(chomp: true) do |line|
+            reporter = reporters.find { |r| r.match?(line) }
+            status.puts(line) if reporter.nil? || reporter.log?
 
-          yield report
+            next unless reporter && block_given?
+
+            yield reporter.new(line)
+          end
+
+          ::IO.copy_stream(stdout, status.output) if status.empty?
+
+          wait_thr.value
         end
+      )
+    end
 
-        wait_thr.value
-      end
+    # Execute a ffmpeg command and raise an error
+    # if the subprocess did not finish successfully.
+    #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
+    # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
+    # @return [FFMPEG::Status]
+    def ffmpeg_execute!(*args, status: nil, reporters: nil)
+      ffmpeg_execute(*args, status:, reporters:).assert!
     end
 
     # Get the path to the ffprobe binary.

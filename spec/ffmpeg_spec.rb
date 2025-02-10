@@ -58,11 +58,14 @@ describe FFMPEG do
     it 'returns the process status and yields reports' do
       reports = []
 
-      status = described_class.ffmpeg_execute(*args) do |report|
+      status = described_class.ffmpeg_execute(
+        *args,
+        reporters: [FFMPEG::Reporters::Output]
+      ) do |report|
         reports << report
       end
 
-      expect(status).to be_a(Process::Status)
+      expect(status).to be_a(FFMPEG::Status)
       expect(status.exitstatus).to eq(0)
       expect(reports.length).to be >= 1
     end
@@ -81,6 +84,12 @@ describe FFMPEG do
       it 'raises IO::TimeoutError' do
         expect { described_class.ffmpeg_execute(*args) }.to raise_error(IO::TimeoutError)
       end
+    end
+  end
+
+  describe '.ffmpeg_execute!' do
+    it 'raises an error when the process is unsuccessful' do
+      expect { FFMPEG.ffmpeg_execute!('-v') }.to raise_error(FFMPEG::Error)
     end
   end
 

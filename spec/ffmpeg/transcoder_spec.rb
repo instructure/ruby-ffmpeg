@@ -54,9 +54,11 @@ module FFMPEG
             ]
           )
 
-          expect(kwargs).to eq(
-            inargs: ['-noautorotate'],
-            reporters: [Reporters::Progress]
+          expect(kwargs).to match(
+            hash_including(
+              inargs: ['-noautorotate'],
+              reporters: nil
+            )
           )
 
           method.call(*args, **kwargs, &block)
@@ -68,6 +70,7 @@ module FFMPEG
         end
 
         expect(status).to be_a(Transcoder::Status)
+        expect(status.success?).to be(true)
         expect(status.paths).to eq(%W[#{output_path}.mp4 #{output_path}.aac])
         expect(status.media).to all(be_a(Media))
         expect(status.media.first.video?).to be(true)
@@ -80,6 +83,19 @@ module FFMPEG
 
         expect(reports.length).to be >= 1
         expect(reports).to all(be_a(Reporters::Output))
+      end
+    end
+
+    describe '#process!' do
+      it 'calls assert! on the result of process' do
+        media = instance_double(Media)
+        output_path = File.join(tmp_dir, SecureRandom.hex(4))
+        status = instance_double(Transcoder::Status)
+        block = proc {}
+
+        expect(status).to receive(:assert!).and_return(status)
+        expect(subject).to receive(:process).with(media, output_path, &block).and_return(status)
+        expect(subject.process!(media, output_path, &block)).to eq(status)
       end
     end
   end

@@ -4,6 +4,7 @@ module FFMPEG
   module Reporters
     # Represents a raw output line from ffmpeg.
     class Output
+      def self.log? = true
       def self.match?(_line) = true
 
       attr_reader :output
