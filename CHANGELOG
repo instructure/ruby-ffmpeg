@@ -1,3 +1,11 @@
+== 7.0.0-beta.3 2025-02-10
+
+Improvements:
+* Added new `FFMPEG::Status` class to handle the status of ffmpeg and ffprobe processes.
+
+Breaking Changes:
+* Removed the borderline useless thumbnail preset.
+
 == 7.0.0-beta.2 2025-01-29
 
 Fixes:
