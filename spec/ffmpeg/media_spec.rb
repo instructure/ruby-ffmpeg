@@ -97,7 +97,7 @@ module FFMPEG
 
           before { allow(FFMPEG).to receive(:ffprobe_capture3).and_return([stdout, '', nil]) }
 
-          it 'does not raise and error' do
+          it 'does not raise an error' do
             expect(subject.load!).to be(true)
           end
         end
