@@ -605,7 +605,7 @@ module FFMPEG
         expect(FFMPEG).to receive(:ffmpeg_execute).and_call_original
 
         status = subject.ffmpeg_execute(*args, reporters:, &block)
-        expect(status).to be_a(Process::Status)
+        expect(status).to be_a(FFMPEG::Status)
         expect(status.exitstatus).to be(0)
 
         expect(reports.length).to be >= 1
@@ -613,6 +613,20 @@ module FFMPEG
         expect(reports.select do |report|
           report.is_a?(FFMPEG::Reporters::Silence)
         end.length).to be >= 1
+      end
+    end
+
+    describe '#ffmpeg_execute!' do
+      it 'calls assert! on the result of ffmpeg_execute' do
+        inargs = [SecureRandom.hex]
+        args = [SecureRandom.hex]
+        reporters = [SecureRandom.hex]
+        status = instance_double(Status)
+        block = proc {}
+
+        expect(status).to receive(:assert!).and_return(status)
+        expect(subject).to receive(:ffmpeg_execute).with(*args, inargs:, status:, reporters:, &block).and_return(status)
+        expect(subject.ffmpeg_execute!(*args, inargs:, status:, reporters:, &block)).to be(status)
       end
     end
   end

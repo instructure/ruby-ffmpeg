@@ -34,7 +34,15 @@ module FFMPEG
   #  media.load!
   #  media.video? # => true
   class Media
-    class LoadError < FFMPEG::Error; end
+    # Raised if media metadata cannot be loaded.
+    class LoadError < Error
+      attr_reader :output
+
+      def initialize(message, output)
+        @output = output
+        super(message)
+      end
+    end
 
     private_class_method def self.autoload(*method_names)
       method_names.flatten!
@@ -89,11 +97,14 @@ module FFMPEG
       begin
         @metadata = MultiJson.load(stdout, symbolize_keys: true)
       rescue MultiJson::ParseError => e
-        raise LoadError, e.message.capitalize
+        raise LoadError.new(e.message.capitalize, stdout)
       end
 
       if @metadata.key?(:error)
-        raise LoadError, "#{@metadata[:error][:string].capitalize} (code #{@metadata[:error][:code]})"
+        raise LoadError.new(
+          "#{@metadata[:error][:string].capitalize} (code #{@metadata[:error][:code]})",
+          stdout
+        )
       end
 
       @size = @metadata[:format][:size].to_i
@@ -484,12 +495,19 @@ module FFMPEG
     # @param inargs [Array<String>] The arguments to pass before the input.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [Process::Status]
-    def ffmpeg_execute(*args, inargs: [], reporters: nil, &block)
-      if reporters.is_a?(Array)
-        FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, reporters: reporters, &block)
-      else
-        FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, &block)
-      end
+    def ffmpeg_execute(*args, inargs: [], status: nil, reporters: nil, &block)
+      FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, status:, reporters:, &block)
+    end
+
+    # Execute a ffmpeg command with the media as input
+    # and raise an error if the subprocess did not finish successfully.
+    #
+    # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @param inargs [Array<String>] The arguments to pass before the input.
+    # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
+    # @return [Process::Status]
+    def ffmpeg_execute!(*args, inargs: [], status: nil, reporters: nil, &block)
+      ffmpeg_execute(*args, inargs:, status:, reporters:, &block).assert!
     end
   end
 end

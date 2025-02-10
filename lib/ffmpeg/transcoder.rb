@@ -21,15 +21,15 @@ module FFMPEG
   #  status.exitstatus # 0
   class Transcoder
     # The Status class represents the status of a transcoding process.
-    # It inherits all methods from the Process::Status class.
+    # It inherits all methods from the FFMPEG::Status class.
     # It also provides a method to retrieve the media files associated with
     # the transcoding process.
-    class Status
+    class Status < FFMPEG::Status
       attr_reader :paths
 
-      def initialize(process_status, paths)
-        @process_status = process_status
+      def initialize(paths)
         @paths = paths
+        super()
       end
 
       # Returns the media files associated with the transcoding process.
@@ -43,21 +43,11 @@ module FFMPEG
           Media.new(path, *ffprobe_args, load: load, autoload: autoload)
         end
       end
-
-      private
-
-      def respond_to_missing?(symbol, include_private)
-        @process_status.respond_to?(symbol, include_private)
-      end
-
-      def method_missing(symbol, *args)
-        @process_status.send(symbol, *args)
-      end
     end
 
     attr_reader :name, :metadata, :presets, :reporters
 
-    def initialize(name: nil, metadata: nil, presets: [], reporters: [Reporters::Progress], &compose_inargs)
+    def initialize(name: nil, metadata: nil, presets: [], reporters: nil, &compose_inargs)
       @name = name
       @metadata = metadata
       @presets = presets
@@ -92,10 +82,24 @@ module FFMPEG
 
       inargs = CommandArgs.compose(media, &@compose_inargs).to_a
 
-      Status.new(
-        media.ffmpeg_execute(*args, inargs: inargs, reporters: @reporters, &),
-        output_paths
+      media.ffmpeg_execute(
+        *args,
+        inargs:,
+        reporters:,
+        status: Status.new(output_paths),
+        &
       )
+    end
+
+    # Transcodes the media file using the preset configurations
+    # and raise an error if the subprocess did not finish successfully.
+    #
+    # @param media [String, Pathname, URI, FFMPEG::Media] The media file to transcode.
+    # @param output_path [String, Pathname] The output path to save the transcoded files.
+    # @yield The block to execute to report the transcoding process.
+    # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
+    def process!(media, output_path, &)
+      process(media, output_path, &).assert!
     end
   end
 end

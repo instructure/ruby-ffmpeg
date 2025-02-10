@@ -6,6 +6,8 @@ module FFMPEG
   module Reporters
     # Represents a silence report from ffmpeg.
     class Silence < Output
+      def self.log? = false
+
       def self.match?(line)
         line.match?(/^\[silencedetect @ \w+\]/)
       end

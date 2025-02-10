@@ -6,6 +6,8 @@ module FFMPEG
   module Reporters
     # Represents the progress of an encoding operation.
     class Progress < Output
+      def self.log? = false
+
       def self.match?(line)
         line.match?(/^\s*frame=/)
       end
