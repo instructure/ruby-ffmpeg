@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = '>= 3.2'
 
+  s.add_dependency('logger', '~> 1.6')
   s.add_dependency('multi_json', '~> 1.8')
 
   s.add_development_dependency('debug')
