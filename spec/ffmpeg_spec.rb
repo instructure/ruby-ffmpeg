@@ -72,17 +72,31 @@ describe FFMPEG do
 
     context 'when ffmpeg hangs' do
       before do
-        FFMPEG::IO.timeout = 0.5
         FFMPEG.ffmpeg_binary = fixture_file('bin/ffmpeg-hanging')
       end
 
       after do
-        FFMPEG::IO.remove_instance_variable(:@timeout)
         FFMPEG.ffmpeg_binary = nil
       end
 
-      it 'raises IO::TimeoutError' do
-        expect { described_class.ffmpeg_execute(*args) }.to raise_error(IO::TimeoutError)
+      context 'with IO timeout set' do
+        before do
+          FFMPEG::IO.timeout = 0.5
+        end
+
+        after do
+          FFMPEG::IO.remove_instance_variable(:@timeout)
+        end
+
+        it 'raises IO::TimeoutError' do
+          expect { described_class.ffmpeg_execute(*args) }.to raise_error(IO::TimeoutError)
+        end
+      end
+
+      context 'with operation timeout set' do
+        it 'raises Timeout::Error' do
+          expect { described_class.ffmpeg_execute(*args, timeout: 0.5) }.to raise_error(Timeout::Error)
+        end
       end
     end
   end
