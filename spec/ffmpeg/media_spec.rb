@@ -620,13 +620,14 @@ module FFMPEG
       it 'calls assert! on the result of ffmpeg_execute' do
         inargs = [SecureRandom.hex]
         args = [SecureRandom.hex]
-        reporters = [SecureRandom.hex]
         status = instance_double(Status)
+        reporters = [SecureRandom.hex]
+        timeout = rand(999)
         block = proc {}
 
         expect(status).to receive(:assert!).and_return(status)
-        expect(subject).to receive(:ffmpeg_execute).with(*args, inargs:, status:, reporters:, &block).and_return(status)
-        expect(subject.ffmpeg_execute!(*args, inargs:, status:, reporters:, &block)).to be(status)
+        expect(subject).to receive(:ffmpeg_execute).with(*args, inargs:, status:, reporters:, timeout:, &block).and_return(status)
+        expect(subject.ffmpeg_execute!(*args, inargs:, status:, reporters:, timeout:, &block)).to be(status)
       end
     end
   end

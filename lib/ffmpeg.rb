@@ -51,12 +51,18 @@ module FFMPEG
 
   class << self
     attr_writer :logger, :reporters
+    attr_accessor :timeout
 
     # Get the FFMPEG logger.
     #
     # @return [Logger]
     def logger
       @logger ||= Logger.new($stdout, level: Logger::INFO)
+    end
+
+    # Get the reporters that are used by default to parse the output of the ffmpeg command.
+    def reporters
+      @reporters ||= [FFMPEG::Reporters::Progress]
     end
 
     # Get the timeout that's used when waiting for ffmpeg output.
@@ -83,11 +89,6 @@ module FFMPEG
     # Set the encoding that's used when reading ffmpeg output.
     def io_encoding=(encoding)
       FFMPEG::IO.encoding = encoding
-    end
-
-    # Get the reporters that are used by default to parse the output of the ffmpeg command.
-    def reporters
-      @reporters ||= [FFMPEG::Reporters::Progress]
     end
 
     # Set the path to the ffmpeg binary.
@@ -143,26 +144,29 @@ module FFMPEG
     # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Status]
-    def ffmpeg_execute(*args, status: nil, reporters: nil)
+    def ffmpeg_execute(*args, status: nil, reporters: nil, timeout: nil)
       status ||= FFMPEG::Status.new
       reporters ||= self.reporters
+      timeout ||= self.timeout
 
-      status.bind!(
+      status.bind! do
         ffmpeg_popen3(*args) do |_stdin, stdout, stderr, wait_thr|
-          stderr.each(chomp: true) do |line|
-            reporter = reporters.find { |r| r.match?(line) }
-            status.puts(line) if reporter.nil? || reporter.log?
+          Timeout.timeout(timeout) do
+            stderr.each(chomp: true) do |line|
+              reporter = reporters.find { |r| r.match?(line) }
+              status.output.puts(line) if reporter.nil? || reporter.log?
 
-            next unless reporter && block_given?
+              next unless reporter && block_given?
 
-            yield reporter.new(line)
+              yield reporter.new(line)
+            end
+
+            ::IO.copy_stream(stdout, status.output) if status.output.string.empty?
+
+            wait_thr.value
           end
-
-          ::IO.copy_stream(stdout, status.output) if status.empty?
-
-          wait_thr.value
         end
-      )
+      end
     end
 
     # Execute a ffmpeg command and raise an error

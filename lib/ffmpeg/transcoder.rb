@@ -45,13 +45,14 @@ module FFMPEG
       end
     end
 
-    attr_reader :name, :metadata, :presets, :reporters
+    attr_reader :name, :metadata, :presets, :reporters, :timeout
 
-    def initialize(name: nil, metadata: nil, presets: [], reporters: nil, &compose_inargs)
+    def initialize(name: nil, metadata: nil, presets: [], reporters: nil, timeout: nil, &compose_inargs)
       @name = name
       @metadata = metadata
       @presets = presets
       @reporters = reporters
+      @timeout = timeout
       @compose_inargs = compose_inargs
     end
 
@@ -86,6 +87,7 @@ module FFMPEG
         *args,
         inargs:,
         reporters:,
+        timeout:,
         status: Status.new(output_paths),
         &
       )
