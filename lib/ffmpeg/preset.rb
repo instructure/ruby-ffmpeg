@@ -46,8 +46,19 @@ module FFMPEG
     # @param output_path [String, Pathname] The path to the output file.
     # @yield The block to execute when progress is made.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
-    def transcode(media, output_path, &)
-      FFMPEG::Transcoder.new(presets: [self]).process(media, output_path, &)
+    def transcode(media, output_path, timeout: nil, &)
+      FFMPEG::Transcoder.new(presets: [self], timeout:).process(media, output_path, &)
+    end
+
+    # Transcode the media to the output path and raise an error
+    # if the process did not finish successfully.
+    #
+    # @param media [Media] The media to transcode.
+    # @param output_path [String, Pathname] The path to the output file.
+    # @yield The block to execute when progress is made.
+    # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
+    def transcode!(media, output_path, timeout: nil, &)
+      transcode(media, output_path, timeout:, &).assert!
     end
   end
 end

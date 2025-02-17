@@ -176,8 +176,8 @@ module FFMPEG
     # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Status]
-    def ffmpeg_execute!(*args, status: nil, reporters: nil)
-      ffmpeg_execute(*args, status:, reporters:).assert!
+    def ffmpeg_execute!(*args, status: nil, reporters: nil, timeout: nil)
+      ffmpeg_execute(*args, status:, reporters:, timeout:).assert!
     end
 
     # Get the path to the ffprobe binary.
