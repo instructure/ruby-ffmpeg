@@ -1,3 +1,13 @@
+== 7.0.0-beta.4 2025-02-24
+
+Improvements:
+* Added support for per-operation timeout.
+* Added global setting for the default per-operation timeout.
+* FFMPEG::Status objects now keep track of the duration of operations.
+
+Fixes:
+* No progress reported for audio-only transcoding operations.
+
 == 7.0.0-beta.3 2025-02-10
 
 Improvements:
