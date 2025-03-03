@@ -9,7 +9,7 @@ module FFMPEG
       def self.log? = false
 
       def self.match?(line)
-        line.match?(/^\s*frame=/)
+        line.match?(/^\s*(?:size|time|frame)=/)
       end
 
       # Returns the current frame number.

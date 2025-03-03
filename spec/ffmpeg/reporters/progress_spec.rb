@@ -12,15 +12,17 @@ module FFMPEG
       end
 
       describe '.match?' do
-        context 'when the line starts with a frame number' do
+        context 'when the line starts with size, time or frame' do
           it 'returns true' do
+            expect(Progress.match?('size=1')).to be(true)
+            expect(Progress.match?('time=1')).to be(true)
             expect(Progress.match?('frame=1')).to be(true)
           end
         end
 
-        context 'when the line does not start with a frame number' do
+        context 'when the line does not start with size, time or frame' do
           it 'returns false' do
-            expect(Progress.match?('size=1')).to be(false)
+            expect(Progress.match?('foo=1')).to be(false)
           end
         end
       end
