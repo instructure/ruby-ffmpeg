@@ -96,7 +96,7 @@ module FFMPEG
     # @param target_value [Integer, Float] The target frame rate.
     # @return [Numeric]
     def adjusted_frame_rate(target_value)
-      [media.frame_rate, target_value].min
+      [media.frame_rate, target_value].compact.min
     end
 
     # Returns the minimum of the current video bit rate and the target value.
@@ -123,7 +123,7 @@ module FFMPEG
 
     def min_bit_rate(*values)
       bit_rate =
-        values.map do |value|
+        values.compact.map do |value|
           next value if value.is_a?(Integer)
 
           unless value.is_a?(String)
