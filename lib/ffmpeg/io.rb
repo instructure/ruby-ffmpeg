@@ -65,7 +65,7 @@ module FFMPEG
           block.call(buffer) unless buffer.empty?
           buffer = String.new
         else
-          buffer << char
+          buffer << FFMPEG::IO.encode!(char)
         end
       end
 
