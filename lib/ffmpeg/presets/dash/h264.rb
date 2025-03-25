@@ -16,10 +16,7 @@ module FFMPEG
           name: 'DASH H.264 360p',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           frame_rate: 30,
           ld_frame_rate: 24,
@@ -30,9 +27,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_360p(audio_bit_rate:, frame_rate:)
             ],
@@ -48,10 +42,7 @@ module FFMPEG
           name: 'DASH H.264 480p',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           frame_rate: 30,
           ld_frame_rate: 24,
@@ -62,9 +53,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_480p(audio_bit_rate:, frame_rate:),
               Presets.h264_360p(audio_bit_rate:, frame_rate:)
@@ -81,10 +69,7 @@ module FFMPEG
           name: 'DASH H.264 720p',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -96,9 +81,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
               Presets.h264_480p(audio_bit_rate:, frame_rate: sd_frame_rate),
@@ -116,10 +98,7 @@ module FFMPEG
           name: 'DASH H.264 1080p',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -131,9 +110,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
               Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -152,10 +128,7 @@ module FFMPEG
           name: 'DASH H.264 1440p',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -167,9 +140,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
               Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -189,10 +159,7 @@ module FFMPEG
           name: 'DASH H.264 4K',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
-          scene_change_threshold: 0,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -205,9 +172,6 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:,
             h264_presets: [
               Presets.h264_4k(audio_bit_rate:, frame_rate: uhd_frame_rate),
               Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -227,15 +191,12 @@ module FFMPEG
 
       # Preset to encode DASH H.264 video files.
       class H264 < DASH
-        attr_reader :h264_presets, :ld_h264_presets
+        attr_reader :scene_change_threshold, :h264_presets, :ld_h264_presets
 
         # @param name [String] The name of the preset.
         # @param filename [String] The filename format of the output.
         # @param metadata [Object] The metadata to associate with the preset.
         # @param segment_duration [Integer] The duration of each segment in seconds.
-        # @param min_keyframe_interval [Integer] The minimum keyframe interval in frames.
-        # @param max_keyframe_interval [Integer] The maximum keyframe interval in frames.
-        # @param scene_change_threshold [Integer] The scene change threshold.
         # @param h264_presets [Array<Presets::H264>] The H.264 presets to use for video streams and the audio stream.
         # @param ld_h264_presets [Array<Presets::H264>] The H.264 presets to use for low-definition video streams.
         # @yield The block to execute to compose the command arguments.
@@ -243,9 +204,7 @@ module FFMPEG
           name: nil,
           filename: nil,
           metadata: nil,
-          segment_duration: 2,
-          min_keyframe_interval: 48,
-          max_keyframe_interval: 48,
+          segment_duration: 4,
           scene_change_threshold: 0,
           h264_presets: [Presets.h264_1080p, Presets.h264_720p, Presets.h264_480p, Presets.h264_360p],
           ld_h264_presets: [Presets.h264_240p, Presets.h264_144p],
@@ -262,6 +221,7 @@ module FFMPEG
             end
           end
 
+          @scene_change_threshold = scene_change_threshold
           @h264_presets = h264_presets
           @ld_h264_presets = ld_h264_presets
           preset = self
@@ -271,10 +231,8 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
-            min_keyframe_interval:,
-            max_keyframe_interval:,
-            scene_change_threshold:
           ) do
+            scene_change_threshold preset.scene_change_threshold
             video_codec_name 'libx264'
             audio_codec_name 'aac'
 
@@ -313,6 +271,7 @@ module FFMPEG
                   video_preset h264_preset.video_preset, stream_index: index
                   video_profile h264_preset.video_profile, stream_index: index
                   constant_rate_factor h264_preset.constant_rate_factor, stream_id: "v:#{index}"
+                  force_key_frames "expr:gte(t,n_forced*#{segment_duration})"
                   pixel_format h264_preset.pixel_format
                 end
               end

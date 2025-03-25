@@ -12,7 +12,7 @@ module FFMPEG
           name: 'DASH AAC 128k',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
+          segment_duration: 4,
           &
         )
           AAC.new(
@@ -29,7 +29,7 @@ module FFMPEG
           name: 'DASH AAC 192k',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
+          segment_duration: 4,
           &
         )
           AAC.new(
@@ -46,7 +46,7 @@ module FFMPEG
           name: 'DASH AAC 320k',
           filename: '%<basename>s.mpd',
           metadata: nil,
-          segment_duration: 2,
+          segment_duration: 4,
           &
         )
           AAC.new(
@@ -73,7 +73,7 @@ module FFMPEG
           name: nil,
           filename: nil,
           metadata: nil,
-          segment_duration: 2,
+          segment_duration: 4,
           audio_bit_rate: '128k',
           &
         )
