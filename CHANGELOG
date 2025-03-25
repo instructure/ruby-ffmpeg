@@ -1,3 +1,14 @@
+== 7.0.0-beta.6 2025-03-25
+
+Improvements:
+* Increased default MPEG-DASH segment duration from 2 seconds to 4 seconds.
+* Removed the MPEG-DASH min_keyframe_interval and max_keyframe_interval options in
+  favor of calculating the optimal keyframe interval based on the
+  segment duration.
+
+Fixes:
+* Resolve byte sequence issues in progress reports.
+
 == 7.0.0-beta.5 2025-03-18
 
 Fixes:
