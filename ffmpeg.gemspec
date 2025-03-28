@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency('logger', '~> 1.6')
   s.add_dependency('multi_json', '~> 1.8')
+  s.add_dependency('shellwords', '~> 0.2')
 
   s.add_development_dependency('debug')
   s.add_development_dependency('rake', '~> 13.2')

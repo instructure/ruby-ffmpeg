@@ -3,10 +3,7 @@
 require_relative '../filter'
 
 module FFMPEG
-  # rubocop:disable Style/Documentation
-  module Filters
-    # rubocop:enable Style/Documentation
-
+  module Filters # rubocop:disable Style/Documentation
     class << self
       def scale(width: nil, height: nil, force_original_aspect_ratio: nil, flags: nil)
         Scale.new(width:, height:, force_original_aspect_ratio:, flags:)
