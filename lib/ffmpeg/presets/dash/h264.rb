@@ -17,6 +17,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           frame_rate: 30,
           ld_frame_rate: 24,
@@ -27,6 +28,7 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
+            keyframe_interval:,
             h264_presets: [
               Presets.h264_360p(audio_bit_rate:, frame_rate:)
             ],
@@ -43,6 +45,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           frame_rate: 30,
           ld_frame_rate: 24,
@@ -53,6 +56,7 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
+            keyframe_interval:,
             h264_presets: [
               Presets.h264_480p(audio_bit_rate:, frame_rate:),
               Presets.h264_360p(audio_bit_rate:, frame_rate:)
@@ -70,6 +74,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -80,6 +85,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            keyframe_interval:,
             segment_duration:,
             h264_presets: [
               Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -99,6 +105,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -109,6 +116,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            keyframe_interval:,
             segment_duration:,
             h264_presets: [
               Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -129,6 +137,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -139,6 +148,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            keyframe_interval:,
             segment_duration:,
             h264_presets: [
               Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -160,6 +170,7 @@ module FFMPEG
           filename: '%<basename>s.mpd',
           metadata: nil,
           segment_duration: 4,
+          keyframe_interval: 1,
           audio_bit_rate: '128k',
           ld_frame_rate: 24,
           sd_frame_rate: 30,
@@ -172,6 +183,7 @@ module FFMPEG
             filename:,
             metadata:,
             segment_duration:,
+            keyframe_interval:,
             h264_presets: [
               Presets.h264_4k(audio_bit_rate:, frame_rate: uhd_frame_rate),
               Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
@@ -191,12 +203,13 @@ module FFMPEG
 
       # Preset to encode DASH H.264 video files.
       class H264 < DASH
-        attr_reader :scene_change_threshold, :h264_presets, :ld_h264_presets
+        attr_reader :keyframe_interval, :h264_presets, :ld_h264_presets
 
         # @param name [String] The name of the preset.
         # @param filename [String] The filename format of the output.
         # @param metadata [Object] The metadata to associate with the preset.
         # @param segment_duration [Integer] The duration of each segment in seconds.
+        # @param keyframe_interval [Integer] The interval between keyframes in seconds.
         # @param h264_presets [Array<Presets::H264>] The H.264 presets to use for video streams and the audio stream.
         # @param ld_h264_presets [Array<Presets::H264>] The H.264 presets to use for low-definition video streams.
         # @yield The block to execute to compose the command arguments.
@@ -205,7 +218,7 @@ module FFMPEG
           filename: nil,
           metadata: nil,
           segment_duration: 4,
-          scene_change_threshold: 0,
+          keyframe_interval: 1,
           h264_presets: [Presets.h264_1080p, Presets.h264_720p, Presets.h264_480p, Presets.h264_360p],
           ld_h264_presets: [Presets.h264_240p, Presets.h264_144p],
           &
@@ -221,7 +234,7 @@ module FFMPEG
             end
           end
 
-          @scene_change_threshold = scene_change_threshold
+          @keyframe_interval = keyframe_interval
           @h264_presets = h264_presets
           @ld_h264_presets = ld_h264_presets
           preset = self
@@ -232,7 +245,6 @@ module FFMPEG
             metadata:,
             segment_duration:,
           ) do
-            scene_change_threshold preset.scene_change_threshold
             video_codec_name 'libx264'
             audio_codec_name 'aac'
 
@@ -243,27 +255,38 @@ module FFMPEG
 
             if media.video_streams?
               # Split the default video stream into multiple streams,
-              # one for each H.264 preset (e.g.: [v:0]split=2[v0][v1]).
+              # one for each usable H.264 preset (e.g.: [v:0]split=2[v0][v1]).
               split_filter =
-                Filters.split(h264_presets.length)
-                       .with_input_link!(media.video_mapping_id)
-                       .with_output_links!(*h264_presets.each_with_index.map { |_, index| "v#{index}" })
+                Filters
+                .split(h264_presets.length)
+                .with_input_link!(media.video_mapping_id)
+                .with_output_links!(*h264_presets.each_with_index.map { |_, index| "v#{index}" })
 
               # Scale the split video streams to the desired resolutions
               # and frame rates (e.g.: [v0]scale=640:360,fps=30[v0out]).
-              scale_filter_graphs =
+              # We also apply the desired pixel format to the video stream,
+              # as well as set the display aspect ratio to the calculated aspect ratio
+              # to resolve potential issues with different aspect ratios.
+              stream_filters =
                 h264_presets.each_with_index.map do |h264_preset, index|
-                  Filter.join(
-                    h264_preset
-                      .scale_filter(media)
-                      .with_input_link!("v#{index}"),
-                    Filters.fps(adjusted_frame_rate(h264_preset.frame_rate))
-                      .with_output_link!("v#{index}out")
-                  )
+                  fps_filter = Filters.fps(adjusted_frame_rate(h264_preset.frame_rate))
+                  scale_filter = h264_preset.scale_filter(media)
+                  dar_filter = Filters.set_dar(media.calculated_aspect_ratio) if media.calculated_aspect_ratio
+                  format_filter = Filters.format(pixel_formats: [h264_preset.pixel_format])
+
+                  Filter.join(*[
+                    fps_filter.with_input_link!("v#{index}"),
+                    scale_filter,
+                    dar_filter,
+                    format_filter.with_output_link!("v#{index}out")
+                  ].compact)
                 end
 
               # Apply the generated filter complex to the output.
-              filter_complex split_filter, *scale_filter_graphs
+              filter_complex split_filter, *stream_filters
+
+              # Force keyframes at the specified interval.
+              force_key_frames "expr:gte(t,n_forced*#{preset.keyframe_interval})"
 
               # Map the scaled video streams with the desired H.264 parameters.
               h264_presets.each_with_index do |h264_preset, index|
@@ -271,8 +294,6 @@ module FFMPEG
                   video_preset h264_preset.video_preset, stream_index: index
                   video_profile h264_preset.video_profile, stream_index: index
                   constant_rate_factor h264_preset.constant_rate_factor, stream_id: "v:#{index}"
-                  force_key_frames "expr:gte(t,n_forced*#{segment_duration})"
-                  pixel_format h264_preset.pixel_format
                 end
               end
             end

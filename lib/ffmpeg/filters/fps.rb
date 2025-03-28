@@ -3,10 +3,7 @@
 require_relative '../filter'
 
 module FFMPEG
-  # rubocop:disable Style/Documentation
-  module Filters
-    # rubocop:enable Style/Documentation
-
+  module Filters # rubocop:disable Style/Documentation
     class << self
       def fps(frame_rate)
         FPS.new(frame_rate)
@@ -20,8 +17,7 @@ module FFMPEG
 
       def initialize(frame_rate)
         unless frame_rate.is_a?(Numeric)
-          raise ArgumentError,
-                "Unknown frame_rate format #{frame_rate.class}, expected #{Numeric}"
+          raise ArgumentError, "Unknown frame_rate format #{frame_rate.class}, expected #{Numeric}"
         end
 
         @frame_rate = frame_rate

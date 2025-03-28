@@ -1,3 +1,14 @@
+== 7.0.0-beta.7 2025-03-28
+
+Improvements:
+* Added new Format, SetDAR and SetSAR filters.
+* FFmpeg commands from the logs are now actually copy-paste executable.
+* Reduced default keyframe interval for MPEG-DASH presets to 1 seconds.
+
+Fixes:
+* MPEG-DASH presets now produce any warnings.
+* The H.264 MPEG-DASH preset failing due to incorrectly calculated aspect ratios.
+
 == 7.0.0-beta.6 2025-03-25
 
 Improvements:

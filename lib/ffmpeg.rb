@@ -3,13 +3,17 @@
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'logger'
+require 'shellwords'
 
 require_relative 'ffmpeg/command_args'
 require_relative 'ffmpeg/errors'
 require_relative 'ffmpeg/filter'
+require_relative 'ffmpeg/filters/format'
 require_relative 'ffmpeg/filters/fps'
 require_relative 'ffmpeg/filters/grayscale'
 require_relative 'ffmpeg/filters/scale'
+require_relative 'ffmpeg/filters/set_dar'
+require_relative 'ffmpeg/filters/set_sar'
 require_relative 'ffmpeg/filters/silence_detect'
 require_relative 'ffmpeg/filters/split'
 require_relative 'ffmpeg/io'
@@ -118,7 +122,7 @@ module FFMPEG
     # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     def ffmpeg_capture3(*args)
-      logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
+      logger.debug(self) { "ffmpeg -y #{Shellwords.join(args)}" }
       FFMPEG::IO.capture3(ffmpeg_binary, '-y', *args)
     end
 
@@ -134,7 +138,7 @@ module FFMPEG
     # @yieldparam wait_thr (+Thread+) The child process thread.
     # @return [Process::Status, Array<IO, Thread>]
     def ffmpeg_popen3(*args, &)
-      logger.debug(self) { "ffmpeg -y #{args.join(' ')}" }
+      logger.debug(self) { "ffmpeg -y #{Shellwords.join(args)}" }
       FFMPEG::IO.popen3(ffmpeg_binary, '-y', *args, &)
     end
 
@@ -209,7 +213,7 @@ module FFMPEG
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_capture3(*args)
-      logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
+      logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
       FFMPEG::IO.capture3(ffprobe_binary, '-y', *args)
     end
 
@@ -225,7 +229,7 @@ module FFMPEG
     # @return [Process::Status, Array<IO, Thread>]
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_popen3(*args, &)
-      logger.debug(self) { "ffprobe -y #{args.join(' ')}" }
+      logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
       FFMPEG::IO.popen3(ffprobe_binary, '-y', *args, &)
     end
 

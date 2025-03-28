@@ -44,6 +44,8 @@ module FFMPEG
       # @example
       #  FFMPEG::RawCommandArgs.format_flags(['fast', 'superfast']) # => "fast|superfast"
       def format_flags(flags, separator: '|', escape: true)
+        return '' if flags.nil?
+
         raise ArgumentError, "Unknown flags format #{flags.class}, expected #{Array}" unless flags.is_a?(Array)
 
         flags = escape ? flags.map(&method(:escape_graph_component)) : flags.map(&:to_s)
