@@ -8,7 +8,7 @@ module FFMPEG
   module Presets
     # Preset to encode DASH media files.
     class DASH < Preset
-      attr_reader :segment_duration, :min_keyframe_interval, :max_keyframe_interval, :scene_change_threshold
+      attr_reader :segment_duration
 
       # @param name [String] The name of the preset.
       # @param filename [String] The filename format of the output.

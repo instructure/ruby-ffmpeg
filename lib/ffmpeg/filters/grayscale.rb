@@ -3,10 +3,7 @@
 require_relative '../filter'
 
 module FFMPEG
-  # rubocop:disable Style/Documentation
-  module Filters
-    # rubocop:enable Style/Documentation
-
+  module Filters # rubocop:disable Style/Documentation
     class << self
       def grayscale
         Grayscale.new
@@ -15,9 +12,9 @@ module FFMPEG
 
     # The Grayscale class uses the format filter
     # to convert a multimedia stream to grayscale.
-    class Grayscale < Filter
+    class Grayscale < Format
       def initialize
-        super(:video, 'format', pix_fmts: ['gray'])
+        super(pixel_formats: 'gray')
       end
     end
   end

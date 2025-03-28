@@ -3,17 +3,14 @@
 require_relative '../filter'
 
 module FFMPEG
-  # rubocop:disable Style/Documentation
-  module Filters
-    # rubocop:enable Style/Documentation
-
+  module Filters # rubocop:disable Style/Documentation
     class << self
       def silence_detect(threshold: nil, duration: nil, mono: nil)
         SilenceDetect.new(threshold:, duration:, mono:)
       end
     end
 
-    # The SilenceDetect class is uses the silencedetect filter
+    # The SilenceDetect class uses the silencedetect filter
     # to detect silent parts in a multimedia stream.
     class SilenceDetect < Filter
       attr_reader :threshold, :duration, :mono

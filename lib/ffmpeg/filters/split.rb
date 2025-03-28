@@ -3,10 +3,7 @@
 require_relative '../filter'
 
 module FFMPEG
-  # rubocop:disable Style/Documentation
-  module Filters
-    # rubocop:enable Style/Documentation
-
+  module Filters # rubocop:disable Style/Documentation
     class << self
       def split(output_count)
         Split.new(output_count)
@@ -20,8 +17,7 @@ module FFMPEG
 
       def initialize(output_count = nil)
         unless output_count.nil? || output_count.is_a?(Integer)
-          raise ArgumentError,
-                "Unknown output_count format #{output_count.class}, expected #{Integer}"
+          raise ArgumentError, "Unknown output_count format #{output_count.class}, expected #{Integer}"
         end
 
         @output_count = output_count if output_count
