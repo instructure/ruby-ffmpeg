@@ -27,7 +27,6 @@ module FFMPEG
 
         super(name:, filename:, metadata:) do
           format_name 'dash'
-          adaptation_sets 'id=0,streams=v id=1,streams=a'
           segment_duration preset.segment_duration
 
           muxing_flags '+faststart'

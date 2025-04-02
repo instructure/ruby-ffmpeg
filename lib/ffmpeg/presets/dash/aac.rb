@@ -81,6 +81,8 @@ module FFMPEG
           preset = self
 
           super(name:, filename:, metadata:, segment_duration:) do
+            adaptation_sets 'id=0,streams=a' if media.audio_streams?
+
             audio_codec_name 'aac'
 
             instance_exec(&) if block_given?
