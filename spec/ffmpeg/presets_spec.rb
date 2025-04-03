@@ -37,7 +37,8 @@ module FFMPEG
         name: 'AAC 128k',
         preset: Presets.aac_128k,
         assert: lambda do |media|
-          expect(media.path).to match(/\.aac\z/)
+          expect(media.path).to match(/\.m4a\z/)
+          expect(media.major_brand).to eq('M4A')
           expect(media.streams.length).to be(1)
           expect(media.audio_streams.length).to be(1)
           expect(media.audio_bit_rate).to be_within(15_000).of(128_000)

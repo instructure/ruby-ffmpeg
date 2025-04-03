@@ -153,6 +153,11 @@ module FFMPEG
       @valid
     end
 
+    # Returns the major brand of the media (if any).
+    autoload def major_brand
+      tags&.fetch(:major_brand, nil)&.to_s&.strip
+    end
+
     # Returns all video streams.
     #
     # @return [Array<Stream>, nil]

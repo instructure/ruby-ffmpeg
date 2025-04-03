@@ -9,7 +9,7 @@ module FFMPEG
     class << self
       def aac_128k(
         name: 'AAC 128k',
-        filename: '%<basename>s.aac',
+        filename: '%<basename>s.m4a',
         metadata: nil,
         &
       )
@@ -24,7 +24,7 @@ module FFMPEG
 
       def aac_192k(
         name: 'AAC 192k',
-        filename: '%<basename>s.aac',
+        filename: '%<basename>s.m4a',
         metadata: nil,
         &
       )
@@ -39,7 +39,7 @@ module FFMPEG
 
       def aac_320k(
         name: 'AAC 320k',
-        filename: '%<basename>s.aac',
+        filename: '%<basename>s.m4a',
         metadata: nil,
         &
       )
@@ -73,6 +73,8 @@ module FFMPEG
         preset = self
 
         super(name:, filename:, metadata:) do
+          format_name 'mp4'
+          brand 'M4A '
           muxing_flags '+faststart'
           map_chapters '-1'
           audio_codec_name 'aac'
