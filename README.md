@@ -156,6 +156,33 @@ FFMPEG.ffprobe_binary = '/usr/local/bin/ffprobe'
 
 ---
 
+The built-in presets can be configured to use a globally specified number of threads.
+
+```ruby
+# Set the number of threads to use for all built-in presets to 4
+FFMPEG.threads = 4
+
+# Set the number of threads to use for all built-in presets to the number of processors available
+FFMPEG.threads = Etc.nprocessors
+
+# Let FFmpeg decide the number of threads to use
+FFMPEG.threads = nil # or 0
+```
+
+---
+
+All high-level classes and methods can use a globally specified timeout for `ffmpeg` commands.
+
+```ruby
+# Set the timeout to 10 seconds
+FFMPEG.timeout = 10
+
+# Disable the timeout altogether
+FFMPEG.timeout = nil
+```
+
+---
+
 By default, the gem will wait for 30 seconds between IO feedback from the FFMPEG process.
 After which an error is raised and the process killed.
 It is possible to modify this behaviour by setting a new default:

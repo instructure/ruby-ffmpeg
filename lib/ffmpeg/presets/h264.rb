@@ -12,6 +12,7 @@ module FFMPEG
         name: 'H.264 144p',
         filename: '%<basename>s.144p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'ultrafast',
         video_profile: 'baseline',
@@ -24,6 +25,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -40,6 +42,7 @@ module FFMPEG
         name: 'H.264 240p',
         filename: '%<basename>s.240p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'ultrafast',
         video_profile: 'baseline',
@@ -52,6 +55,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -68,6 +72,7 @@ module FFMPEG
         name: 'H.264 360p',
         filename: '%<basename>s.360p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'ultrafast',
         video_profile: 'baseline',
@@ -80,6 +85,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -96,6 +102,7 @@ module FFMPEG
         name: 'H.264 480p',
         filename: '%<basename>s.480p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'main',
@@ -108,6 +115,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -124,6 +132,7 @@ module FFMPEG
         name: 'H.264 720p',
         filename: '%<basename>s.720p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
@@ -136,6 +145,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -152,6 +162,7 @@ module FFMPEG
         name: 'H.264 1080p',
         filename: '%<basename>s.1080p.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
@@ -164,6 +175,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -180,6 +192,7 @@ module FFMPEG
         name: 'H.264 2K',
         filename: '%<basename>s.2k.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
@@ -192,6 +205,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -208,6 +222,7 @@ module FFMPEG
         name: 'H.264 4K',
         filename: '%<basename>s.4k.mp4',
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
@@ -220,6 +235,7 @@ module FFMPEG
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate:,
           video_preset:,
           video_profile:,
@@ -235,7 +251,7 @@ module FFMPEG
 
     # Preset to encode H.264 video files.
     class H264 < Preset
-      attr_reader :audio_bit_rate, :video_preset, :video_profile,
+      attr_reader :threads, :audio_bit_rate, :video_preset, :video_profile,
                   :frame_rate, :constant_rate_factor, :pixel_format,
                   :max_width, :max_height
 
@@ -255,6 +271,7 @@ module FFMPEG
         name: nil,
         filename: nil,
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         video_preset: 'fast',
         video_profile: 'high',
@@ -273,6 +290,7 @@ module FFMPEG
           raise ArgumentError, "Unknown max_height format #{max_height.class}, expected #{Numeric}"
         end
 
+        @threads = threads
         @audio_bit_rate = audio_bit_rate
         @video_preset = video_preset
         @video_profile = video_profile
@@ -284,6 +302,7 @@ module FFMPEG
         preset = self
 
         super(name:, filename:, metadata:) do
+          threads preset.threads if preset.threads
           format_name 'mp4'
           muxing_flags '+faststart'
           map_chapters '-1'
