@@ -259,6 +259,8 @@ module FFMPEG
             threads:,
             segment_duration:,
           ) do
+            scene_change_threshold 0
+
             if media.video_streams? && media.audio_streams?
               adaptation_sets 'id=0,streams=v id=1,streams=a'
             elsif media.video_streams?
