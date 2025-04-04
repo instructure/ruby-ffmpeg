@@ -30,7 +30,7 @@ module FFMPEG
           format_name 'dash'
           segment_duration preset.segment_duration
 
-          muxing_flags '+faststart'
+          muxing_flags 'frag_keyframe+empty_moov+default_base_moof'
           map_chapters '-1'
 
           instance_exec(&)
