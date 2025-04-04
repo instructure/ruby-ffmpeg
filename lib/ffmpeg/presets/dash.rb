@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
-require 'etc'
-
 require_relative '../preset'
 
 module FFMPEG
   module Presets
     # Preset to encode DASH media files.
     class DASH < Preset
-      attr_reader :segment_duration
+      attr_reader :threads, :segment_duration
 
       # @param name [String] The name of the preset.
       # @param filename [String] The filename format of the output.
@@ -19,13 +17,16 @@ module FFMPEG
         name: nil,
         filename: nil,
         metadata: nil,
+        threads: FFMPEG.threads,
         segment_duration: 4,
         &
       )
+        @threads = threads
         @segment_duration = segment_duration
         preset = self
 
         super(name:, filename:, metadata:) do
+          threads preset.threads if preset.threads
           format_name 'dash'
           segment_duration preset.segment_duration
 

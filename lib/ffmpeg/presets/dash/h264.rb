@@ -16,6 +16,7 @@ module FFMPEG
           name: 'DASH H.264 360p',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -27,6 +28,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
@@ -44,6 +46,7 @@ module FFMPEG
           name: 'DASH H.264 480p',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -55,6 +58,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
@@ -73,6 +77,7 @@ module FFMPEG
           name: 'DASH H.264 720p',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -85,6 +90,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
@@ -104,6 +110,7 @@ module FFMPEG
           name: 'DASH H.264 1080p',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -116,6 +123,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
@@ -136,6 +144,7 @@ module FFMPEG
           name: 'DASH H.264 1440p',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -148,6 +157,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
@@ -169,6 +179,7 @@ module FFMPEG
           name: 'DASH H.264 4K',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           audio_bit_rate: '128k',
@@ -182,6 +193,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
@@ -217,6 +229,7 @@ module FFMPEG
           name: nil,
           filename: nil,
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           keyframe_interval: 1,
           h264_presets: [Presets.h264_1080p, Presets.h264_720p, Presets.h264_480p, Presets.h264_360p],
@@ -243,6 +256,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
           ) do
             if media.video_streams? && media.audio_streams?

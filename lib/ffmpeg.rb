@@ -55,7 +55,7 @@ module FFMPEG
 
   class << self
     attr_writer :logger, :reporters
-    attr_accessor :timeout
+    attr_accessor :threads, :timeout
 
     # Get the FFMPEG logger.
     #

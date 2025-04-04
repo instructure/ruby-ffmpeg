@@ -12,6 +12,7 @@ module FFMPEG
           name: 'DASH AAC 128k',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           &
         )
@@ -19,6 +20,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             audio_bit_rate: '128k',
             &
@@ -29,6 +31,7 @@ module FFMPEG
           name: 'DASH AAC 192k',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           &
         )
@@ -36,6 +39,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             audio_bit_rate: '192k',
             &
@@ -46,6 +50,7 @@ module FFMPEG
           name: 'DASH AAC 320k',
           filename: '%<basename>s.mpd',
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           &
         )
@@ -53,6 +58,7 @@ module FFMPEG
             name:,
             filename:,
             metadata:,
+            threads:,
             segment_duration:,
             audio_bit_rate: '320k',
             &
@@ -73,6 +79,7 @@ module FFMPEG
           name: nil,
           filename: nil,
           metadata: nil,
+          threads: FFMPEG.threads,
           segment_duration: 4,
           audio_bit_rate: '128k',
           &
@@ -80,7 +87,13 @@ module FFMPEG
           @audio_bit_rate = audio_bit_rate
           preset = self
 
-          super(name:, filename:, metadata:, segment_duration:) do
+          super(
+            name:,
+            filename:,
+            metadata:,
+            threads:,
+            segment_duration:
+          ) do
             adaptation_sets 'id=0,streams=a' if media.audio_streams?
 
             audio_codec_name 'aac'

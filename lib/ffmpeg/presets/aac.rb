@@ -11,12 +11,14 @@ module FFMPEG
         name: 'AAC 128k',
         filename: '%<basename>s.m4a',
         metadata: nil,
+        threads: FFMPEG.threads,
         &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate: '128k',
           &
         )
@@ -26,12 +28,14 @@ module FFMPEG
         name: 'AAC 192k',
         filename: '%<basename>s.m4a',
         metadata: nil,
+        threads: FFMPEG.threads,
         &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate: '192k',
           &
         )
@@ -41,12 +45,14 @@ module FFMPEG
         name: 'AAC 320k',
         filename: '%<basename>s.m4a',
         metadata: nil,
+        threads: FFMPEG.threads,
         &
       )
         AAC.new(
           name:,
           filename:,
           metadata:,
+          threads:,
           audio_bit_rate: '320k',
           &
         )
@@ -55,7 +61,7 @@ module FFMPEG
 
     # Preset to encode AAC audio files.
     class AAC < Preset
-      attr_reader :audio_bit_rate
+      attr_reader :threads, :audio_bit_rate
 
       # @param name [String] The name of the preset.
       # @param filename [String] The filename format of the output.
@@ -66,13 +72,16 @@ module FFMPEG
         name: nil,
         filename: nil,
         metadata: nil,
+        threads: FFMPEG.threads,
         audio_bit_rate: '128k',
         &
       )
+        @threads = threads
         @audio_bit_rate = audio_bit_rate
         preset = self
 
         super(name:, filename:, metadata:) do
+          threads preset.threads if preset.threads
           format_name 'mp4'
           brand 'M4A '
           muxing_flags '+faststart'
