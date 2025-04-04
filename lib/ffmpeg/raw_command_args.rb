@@ -118,7 +118,7 @@ module FFMPEG
         elsif value.is_a?(Array)
           self.class.format_flags(value)
         else
-          value.to_s
+          value&.to_s
         end
 
       @args << "-#{name}"
