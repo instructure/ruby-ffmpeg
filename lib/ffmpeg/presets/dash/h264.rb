@@ -291,23 +291,22 @@ module FFMPEG
               # We also apply the desired pixel format to the video stream,
               # as well as set the display aspect ratio to the calculated aspect ratio
               # to resolve potential issues with different aspect ratios.
-              stream_filters =
+              stream_filter_graphs =
                 h264_presets.each_with_index.map do |h264_preset, index|
                   fps_filter = Filters.fps(adjusted_frame_rate(h264_preset.frame_rate))
+                  format_filter = h264_preset.format_filter
                   scale_filter = h264_preset.scale_filter(media)
                   dar_filter = Filters.set_dar(media.calculated_aspect_ratio) if media.calculated_aspect_ratio
-                  format_filter = Filters.format(pixel_formats: [h264_preset.pixel_format])
 
-                  Filter.join(*[
-                    fps_filter.with_input_link!("v#{index}"),
-                    scale_filter,
-                    dar_filter,
-                    format_filter.with_output_link!("v#{index}out")
-                  ].compact)
+                  stream_filters = [fps_filter, format_filter, scale_filter, dar_filter].compact
+                  stream_filters.first.with_input_link!("v#{index}")
+                  stream_filters.last.with_output_link!("v#{index}out")
+
+                  Filter.join(*stream_filters)
                 end
 
               # Apply the generated filter complex to the output.
-              filter_complex split_filter, *stream_filters
+              filter_complex split_filter, *stream_filter_graphs
 
               # Force keyframes at the specified interval.
               force_key_frames "expr:gte(t,n_forced*#{preset.keyframe_interval})"
