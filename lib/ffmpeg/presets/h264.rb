@@ -316,8 +316,7 @@ module FFMPEG
             video_profile preset.video_profile
             frame_rate preset.frame_rate
             constant_rate_factor preset.constant_rate_factor
-            pixel_format preset.pixel_format
-            filter preset.scale_filter(media)
+            filters preset.format_filter, preset.scale_filter(media)
           end
 
           map media.audio_mapping_id do
@@ -342,6 +341,10 @@ module FFMPEG
         else
           true
         end
+      end
+
+      def format_filter
+        Filters.format(pixel_formats: @pixel_format)
       end
 
       def scale_filter(media)
