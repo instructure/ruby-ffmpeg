@@ -190,6 +190,15 @@ module FFMPEG
       @default_video_stream = video_streams.find(&:default?) || video_streams.first
     end
 
+    # Whether the media is HDR (High Dynamic Range).
+    #
+    # @return [Boolean]
+    autoload def hdr?
+      default_video_stream&.color_primaries == 'bt2020' &&
+      default_video_stream&.color_space == 'bt2020nc' &&
+      %w[smpte2084 arib-std-b67].include?(default_video_stream&.color_transfer)
+    end
+
     # Whether the media is rotated (based on the default video stream).
     # (e.g. 90°, 180°, 270°)
     #
@@ -280,6 +289,13 @@ module FFMPEG
     # @return [String, nil]
     autoload def calculated_pixel_aspect_ratio
       default_video_stream&.calculated_pixel_aspect_ratio
+    end
+
+    # Returns the pixel format of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def pixel_format
+      default_video_stream&.pixel_format
     end
 
     # Returns the color range of the default video stream (if any).

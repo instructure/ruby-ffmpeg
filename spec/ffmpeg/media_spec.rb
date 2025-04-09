@@ -447,7 +447,8 @@ module FFMPEG
     {
       calculated_pixel_aspect_ratio: Rational(1),
       color_range: 'pc',
-      color_space: 'yuvj420p',
+      pixel_format: 'yuvj420p',
+      color_space: 'bt709',
       frame_rate: Rational(60 / 1),
       frames: 213,
       video_index: 0,
@@ -456,7 +457,10 @@ module FFMPEG
       video_profile: 'High',
       video_codec_name: 'h264',
       video_bit_rate: 41_401_600,
-      video_overview: 'h264 (High) (avc1 / 0x31637661), yuvj420p, 3840x2160 [SAR 1:1 DAR 16:9]',
+      # rubocop:disable Layout/LineLength
+      video_overview:
+        %r{h264 \(High\) \(avc1 / 0x31637661\), yuvj420p\(pc, bt709/bt709/bt709, (progressive|unknown)\), 3840x2160 \[SAR 1:1 DAR 16:9\]},
+      # rubocop:enable Layout/LineLength
       video_tags: {
         encoder: 'Lavc61.19.100 libx264',
         handler_name: 'VideoHandle',
@@ -466,7 +470,11 @@ module FFMPEG
     }.each do |method, value|
       describe "##{method}" do
         it "returns the #{method.to_s.gsub(/^video_/, '').gsub('_', ' ')} of the default video stream" do
-          expect(subject.public_send(method)).to eq(value)
+          if value.is_a?(Regexp)
+            expect(subject.public_send(method)).to match(value)
+          else
+            expect(subject.public_send(method)).to eq(value)
+          end
         end
       end
     end

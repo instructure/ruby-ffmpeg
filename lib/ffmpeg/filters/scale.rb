@@ -5,12 +5,42 @@ require_relative '../filter'
 module FFMPEG
   module Filters # rubocop:disable Style/Documentation
     class << self
-      def scale(width: nil, height: nil, force_original_aspect_ratio: nil, flags: nil)
-        Scale.new(width:, height:, force_original_aspect_ratio:, flags:)
+      def scale(
+        zlib: false,
+        width: nil,
+        height: nil,
+        algorithm: nil,
+        in_color_space: nil,
+        out_color_space: nil,
+        in_color_range: nil,
+        out_color_range: nil,
+        in_color_primaries: nil,
+        out_color_primaries: nil,
+        in_color_transfer: nil,
+        out_color_transfer: nil,
+        in_chroma_location: nil,
+        out_chroma_location: nil
+      )
+        Scale.new(
+          zlib:,
+          width:,
+          height:,
+          algorithm:,
+          in_color_space:,
+          out_color_space:,
+          in_color_range:,
+          out_color_range:,
+          in_color_primaries:,
+          out_color_primaries:,
+          in_color_transfer:,
+          out_color_transfer:,
+          in_chroma_location:,
+          out_chroma_location:
+        )
       end
     end
 
-    # The Scale class uses the scale filter
+    # The Scale class uses the scale (or zscale) filter
     # to resize a multimedia stream.
     class Scale < Filter
       NEAREST_DIMENSION = -1
@@ -25,7 +55,7 @@ module FFMPEG
         # @param max_width [Numeric] The maximum width to fit.
         # @param max_height [Numeric] The maximum height to fit.
         # @return [FFMPEG::Filters::Scale] The scale filter.
-        def contained(media, max_width: nil, max_height: nil)
+        def contained(media, max_width: nil, max_height: nil, **kwargs)
           unless media.is_a?(FFMPEG::Media)
             raise ArgumentError,
                   "Unknown media format #{media.class}, expected #{FFMPEG::Media}"
@@ -52,18 +82,38 @@ module FFMPEG
           end
 
           if width.negative? || height.negative?
-            Filters.scale(width:, height:)
+            new(width:, height:, **kwargs)
           elsif media.calculated_aspect_ratio > Rational(width, height)
-            Filters.scale(width:, height: -2)
+            new(width:, height: -2, **kwargs)
           else
-            Filters.scale(width: -2, height:)
+            new(width: -2, height:, **kwargs)
           end
         end
       end
 
-      attr_reader :width, :height, :force_original_aspect_ratio, :flags
+      attr_reader :width, :height, :algorithm,
+                  :in_color_space, :out_color_space,
+                  :in_color_range, :out_color_range,
+                  :in_color_primaries, :out_color_primaries,
+                  :in_color_transfer, :out_color_transfer,
+                  :in_chroma_location, :out_chroma_location
 
-      def initialize(width: nil, height: nil, force_original_aspect_ratio: nil, flags: nil)
+      def initialize(
+        zlib: false,
+        width: nil,
+        height: nil,
+        algorithm: nil,
+        in_color_space: nil,
+        out_color_space: nil,
+        in_color_range: nil,
+        out_color_range: nil,
+        in_color_primaries: nil,
+        out_color_primaries: nil,
+        in_color_transfer: nil,
+        out_color_transfer: nil,
+        in_chroma_location: nil,
+        out_chroma_location: nil
+      )
         if !width.nil? && !width.is_a?(Numeric) && !width.is_a?(String)
           raise ArgumentError, "Unknown width format #{width.class}, expected #{Numeric} or #{String}"
         end
@@ -72,32 +122,63 @@ module FFMPEG
           raise ArgumentError, "Unknown height format #{height.class}, expected #{Numeric} or #{String}"
         end
 
-        if !force_original_aspect_ratio.nil? && !force_original_aspect_ratio.is_a?(String)
-          raise ArgumentError,
-                "Unknown force_original_aspect_ratio format #{force_original_aspect_ratio.class}, expected #{String}"
-        end
-
-        if !flags.nil? && !flags.is_a?(Array)
-          raise ArgumentError, "Unknown flags format #{flags.class}, expected #{Array}"
-        end
-
         @width = width
         @height = height
-        @force_original_aspect_ratio = force_original_aspect_ratio
-        @flags = flags
+        @algorithm = algorithm
+        @in_color_space = in_color_space
+        @out_color_space = out_color_space
+        @in_color_range = in_color_range
+        @out_color_range = out_color_range
+        @in_color_primaries = in_color_primaries
+        @out_color_primaries = out_color_primaries
+        @in_color_transfer = in_color_transfer
+        @out_color_transfer = out_color_transfer
+        @in_chroma_location = in_chroma_location
+        @out_chroma_location = out_chroma_location
 
-        super(:video, 'scale')
+        super(:video, zlib ? 'zscale' : 'scale')
+      end
+
+      def zlib?
+        @name.start_with?('z')
       end
 
       protected
 
       def format_kwargs
-        super(
-          w: @width,
-          h: @height,
-          force_original_aspect_ratio: @force_original_aspect_ratio,
-          flags: @flags
-        )
+        if zlib?
+          super(
+            w: @width,
+            h: @height,
+            f: @algorithm,
+            min: @in_color_space,
+            m: @out_color_space,
+            rin: @in_color_range,
+            r: @out_color_range,
+            pin: @in_color_primaries,
+            p: @out_color_primaries,
+            tin: @in_color_transfer,
+            t: @out_color_transfer,
+            cin: @in_chroma_location,
+            c: @out_chroma_location
+          )
+        else
+          super(
+            w: @width,
+            h: @height,
+            flags: @algorithm && [@algorithm],
+            in_color_matrix: @in_color_space,
+            out_color_matrix: @out_color_space,
+            in_range: @in_color_range,
+            out_range: @out_color_range,
+            in_primaries: @in_color_primaries,
+            out_primaries: @out_color_primaries,
+            in_transfer: @in_color_transfer,
+            out_transfer: @out_color_transfer,
+            in_chroma_loc: @in_chroma_location,
+            out_chroma_loc: @out_chroma_location
+          )
+        end
       end
     end
   end
