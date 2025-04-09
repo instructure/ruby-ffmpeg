@@ -7,7 +7,7 @@ module FFMPEG
                 :id, :index, :profile, :tags,
                 :codec_name, :codec_long_name, :codec_tag, :codec_tag_string, :codec_type,
                 :coded_width, :coded_height, :sample_aspect_ratio, :display_aspect_ratio, :rotation,
-                :color_range, :color_space, :frame_rate,
+                :pixel_format, :color_range, :color_space, :color_primaries, :color_transfer, :field_order, :frame_rate,
                 :sample_rate, :sample_fmt, :channels, :channel_layout,
                 :start_time, :bit_rate, :duration, :frames, :overview
 
@@ -44,8 +44,12 @@ module FFMPEG
             &.abs
         end
 
+      @pixel_format = metadata[:pix_fmt]
       @color_range = metadata[:color_range]
-      @color_space = metadata[:pix_fmt] || metadata[:color_space]
+      @color_space = metadata[:color_space]
+      @color_primaries = metadata[:color_primaries]
+      @color_transfer = metadata[:color_transfer]
+      @field_order = metadata[:field_order]
       unless metadata[:avg_frame_rate].nil? || metadata[:avg_frame_rate] == '0/0'
         @frame_rate = Rational(metadata[:avg_frame_rate])
       end
@@ -64,7 +68,11 @@ module FFMPEG
         @overview = "#{codec_name} " \
                     "(#{profile}) " \
                     "(#{codec_tag_string} / #{codec_tag}), " \
-                    "#{color_space}, #{resolution} " \
+                    "#{pixel_format}" \
+                    "(#{color_range || 'unknown'}, " \
+                    "#{color_space || 'unknown'}/#{color_transfer || 'unknown'}/#{color_primaries || 'unknown'}, " \
+                    "#{field_order || 'unknown'}), " \
+                    "#{resolution} " \
                     "[SAR #{sample_aspect_ratio} DAR #{display_aspect_ratio}]"
       elsif audio?
         @overview = "#{codec_name} " \
