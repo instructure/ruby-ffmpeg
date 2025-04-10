@@ -1,3 +1,10 @@
+== 7.0.0-beta.11 2025-04-10
+
+Improvements:
+* Better mimic the output of FFmpeg with the stream overview methods.
+* Added support for using zlib with the Scale filter.
+* Updated the H.264 presets to use zlib for scaling by default.
+
 == 7.0.0-beta.10 2025-04-08
 
 Fixes:
