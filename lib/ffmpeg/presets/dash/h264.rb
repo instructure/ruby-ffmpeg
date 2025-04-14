@@ -297,8 +297,9 @@ module FFMPEG
                   format_filter = h264_preset.format_filter
                   scale_filter = h264_preset.scale_filter(media)
                   dar_filter = Filters.set_dar(media.calculated_aspect_ratio) if media.calculated_aspect_ratio
+                  sar_filter = Filters.set_sar(media.sample_aspect_ratio) if media.sample_aspect_ratio
 
-                  stream_filters = [fps_filter, format_filter, scale_filter, dar_filter].compact
+                  stream_filters = [fps_filter, format_filter, scale_filter, dar_filter, sar_filter].compact
                   stream_filters.first.with_input_link!("v#{index}")
                   stream_filters.last.with_output_link!("v#{index}out")
 
