@@ -13,7 +13,7 @@ Only guaranteed to work with Ruby 3.1 or later.
 
 ### ffmpeg
 
-The current gem is tested against ffmpeg 4, 5, 6 and 7. So no guarantees with earlier (or much later) 
+The current gem is tested against ffmpeg 6 and 7. So no guarantees with earlier (or much later) 
 versions. Output and input standards have inconveniently changed rather a lot between versions 
 of ffmpeg. Our goal is to keep this library in sync with new versions of ffmpeg as they come along.
 
