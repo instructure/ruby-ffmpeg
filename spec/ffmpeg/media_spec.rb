@@ -446,9 +446,11 @@ module FFMPEG
 
     {
       calculated_pixel_aspect_ratio: Rational(1),
-      color_range: 'pc',
       pixel_format: 'yuvj420p',
+      color_range: 'pc',
       color_space: 'bt709',
+      color_primaries: 'bt709',
+      color_transfer: 'bt709',
       frame_rate: Rational(60 / 1),
       frames: 213,
       video_index: 0,

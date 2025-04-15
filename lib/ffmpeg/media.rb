@@ -312,6 +312,20 @@ module FFMPEG
       default_video_stream&.color_space
     end
 
+    # Returns the color primaries of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def color_primaries
+      default_video_stream&.color_primaries
+    end
+
+    # Returns the color transfer of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def color_transfer
+      default_video_stream&.color_transfer
+    end
+
     # Returns the frame rate (avg_frame_rate) of the default video stream (if any).
     #
     # @return [Float, nil]
