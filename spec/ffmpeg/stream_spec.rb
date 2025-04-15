@@ -168,12 +168,12 @@ module FFMPEG
       end
     end
 
-    describe '#calculated_aspect_ratio' do
+    describe '#display_aspect_ratio' do
       context 'when the display_aspect_ratio is nil' do
         let(:metadata) { { width: 100, height: 200 } }
 
         it 'returns the aspect ratio from the width and height' do
-          expect(subject.calculated_aspect_ratio).to eq(Rational(1, 2))
+          expect(subject.display_aspect_ratio).to eq(Rational(1, 2))
         end
       end
 
@@ -181,25 +181,25 @@ module FFMPEG
         let(:metadata) { { width: 100, height: 200, display_aspect_ratio: '16:9' } }
 
         it 'returns the aspect ratio from the display_aspect_ratio' do
-          expect(subject.calculated_aspect_ratio).to eq(Rational(16, 9))
+          expect(subject.display_aspect_ratio).to eq(Rational(16, 9))
         end
 
         context 'and the stream is rotated' do
           let(:metadata) { { width: 100, height: 200, display_aspect_ratio: '16:9', tags: { rotate: 90 } } }
 
           it 'returns the aspect ratio from the display_aspect_ratio' do
-            expect(subject.calculated_aspect_ratio).to eq(Rational(9, 16))
+            expect(subject.display_aspect_ratio).to eq(Rational(9, 16))
           end
         end
       end
     end
 
-    describe '#calculated_pixel_aspect_ratio' do
+    describe '#sample_aspect_ratio' do
       context 'when the sample_aspect_ratio is nil' do
         let(:metadata) { { sample_aspect_ratio: nil } }
 
         it 'returns 1' do
-          expect(subject.calculated_pixel_aspect_ratio).to eq(Rational(1))
+          expect(subject.sample_aspect_ratio).to eq(Rational(1))
         end
       end
 
@@ -207,7 +207,7 @@ module FFMPEG
         let(:metadata) { { sample_aspect_ratio: '16:9' } }
 
         it 'returns the aspect ratio from the sample_aspect_ratio' do
-          expect(subject.calculated_pixel_aspect_ratio).to eq(Rational(16, 9))
+          expect(subject.sample_aspect_ratio).to eq(Rational(16, 9))
         end
       end
     end

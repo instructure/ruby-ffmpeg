@@ -45,7 +45,7 @@ module FFMPEG
           expect(args).to eq(
             %W[
               -c:v libx264 -c:a aac
-              -map v:0 -vf scale=w=-2:h=360 -crf 28
+              -map v:0 -filter:v scale=w=-2:h=360 -crf 28
               -map a:0 -b:a 96k
               #{output_path}.mp4
               -c:a aac

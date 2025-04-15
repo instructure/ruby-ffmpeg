@@ -88,7 +88,7 @@ module FFMPEG
       it 'adds the correct filter argument' do
         filter = Filters.fps(30)
         subject.filter(filter)
-        expect(subject.to_a).to eq(['-vf', filter.to_s])
+        expect(subject.to_a).to eq(['-filter:v', filter.to_s])
       end
     end
 
@@ -97,7 +97,7 @@ module FFMPEG
         video_filters = [Filters.fps(30), Filters.grayscale]
         audio_filters = [Filters.silence_detect]
         subject.filters(*video_filters[0..1], *audio_filters, *video_filters[2..])
-        expect(subject.to_a).to eq(['-vf', Filter.join(*video_filters), '-af', Filter.join(*audio_filters)])
+        expect(subject.to_a).to eq(['-filter:v', Filter.join(*video_filters), '-filter:a', Filter.join(*audio_filters)])
       end
     end
 
@@ -169,7 +169,6 @@ module FFMPEG
       frame_rate: 'r',
       pixel_format: 'pix_fmt',
       resolution: 's',
-      aspect_ratio: 'aspect',
       min_keyframe_interval: 'keyint_min',
       max_keyframe_interval: 'g',
       scene_change_threshold: 'sc_threshold',
@@ -187,6 +186,7 @@ module FFMPEG
     end
 
     {
+      aspect_ratio: 'aspect:v',
       video_codec_name: 'c:v',
       video_bit_rate: 'b:v',
       video_preset: 'preset:v',

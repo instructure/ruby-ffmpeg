@@ -86,7 +86,7 @@ module FFMPEG
 
           if width.negative? || height.negative?
             new(width:, height:, **kwargs)
-          elsif media.calculated_aspect_ratio > Rational(width, height)
+          elsif media.display_aspect_ratio > Rational(width, height)
             new(width:, height: -2, **kwargs)
           else
             new(width: -2, height:, **kwargs)
