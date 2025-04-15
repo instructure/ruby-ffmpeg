@@ -415,23 +415,9 @@ module FFMPEG
     end
 
     describe '#display_aspect_ratio' do
-      let(:path) { fixture_media_file('portrait@4k60.mp4') }
-
-      it 'returns the display aspect ratio of the default video stream' do
-        expect(subject.display_aspect_ratio).to eq('16:9')
-      end
-    end
-
-    describe '#sample_aspect_ratio' do
-      it 'returns the sample aspect ratio of the default video stream' do
-        expect(subject.sample_aspect_ratio).to eq('1:1')
-      end
-    end
-
-    describe '#calculated_aspect_ratio' do
       context 'when the default video stream is not rotated' do
         it 'returns the aspect ratio of the default video stream' do
-          expect(subject.calculated_aspect_ratio).to eq(Rational(16, 9))
+          expect(subject.display_aspect_ratio).to eq(Rational(16, 9))
         end
       end
 
@@ -439,13 +425,16 @@ module FFMPEG
         let(:path) { fixture_media_file('portrait@4k60.mp4') }
 
         it 'returns the inverted aspect ratio of the default video stream' do
-          expect(subject.calculated_aspect_ratio).to eq(Rational(9, 16))
+          expect(subject.display_aspect_ratio).to eq(Rational(9, 16))
         end
       end
     end
 
     {
-      calculated_pixel_aspect_ratio: Rational(1),
+      raw_sample_aspect_ratio: '1:1',
+      sample_aspect_ratio: Rational(1),
+      raw_display_aspect_ratio: '16:9',
+      display_aspect_ratio: Rational(16, 9),
       pixel_format: 'yuvj420p',
       color_range: 'pc',
       color_space: 'bt709',

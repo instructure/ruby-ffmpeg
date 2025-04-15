@@ -352,6 +352,12 @@ module FFMPEG
 
         Filters::Scale.contained(media, max_width: @max_width, max_height: @max_height)
       end
+
+      def dar_filter(media)
+        return unless media.display_aspect_ratio
+
+        Filters.set_dar(media.display_aspect_ratio)
+      end
     end
   end
 end

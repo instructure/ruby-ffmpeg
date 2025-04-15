@@ -6,7 +6,8 @@ module FFMPEG
     attr_reader :metadata,
                 :id, :index, :profile, :tags,
                 :codec_name, :codec_long_name, :codec_tag, :codec_tag_string, :codec_type,
-                :coded_width, :coded_height, :sample_aspect_ratio, :display_aspect_ratio, :rotation,
+                :raw_width, :raw_height, :coded_width, :coded_height,
+                :raw_sample_aspect_ratio, :raw_display_aspect_ratio, :rotation,
                 :pixel_format, :color_range, :color_space, :color_primaries, :color_transfer, :field_order, :frame_rate,
                 :sample_rate, :sample_fmt, :channels, :channel_layout,
                 :start_time, :bit_rate, :duration, :frames, :overview
@@ -25,12 +26,12 @@ module FFMPEG
       @codec_tag_string = metadata[:codec_tag_string]
       @codec_type = metadata[:codec_type]&.to_sym
 
-      @width = metadata[:width]&.to_i
-      @height = metadata[:height]&.to_i
+      @raw_width = metadata[:width]&.to_i
+      @raw_height = metadata[:height]&.to_i
       @coded_width = metadata[:coded_width]&.to_i
       @coded_height = metadata[:coded_height]&.to_i
-      @sample_aspect_ratio = metadata[:sample_aspect_ratio]
-      @display_aspect_ratio = metadata[:display_aspect_ratio]
+      @raw_sample_aspect_ratio = metadata[:sample_aspect_ratio]
+      @raw_display_aspect_ratio = metadata[:display_aspect_ratio]
 
       @rotation =
         if metadata.dig(:tags, :rotate)
@@ -73,7 +74,7 @@ module FFMPEG
                     "#{color_space || 'unknown'}/#{color_transfer || 'unknown'}/#{color_primaries || 'unknown'}, " \
                     "#{field_order || 'unknown'}), " \
                     "#{resolution} " \
-                    "[SAR #{sample_aspect_ratio} DAR #{display_aspect_ratio}]"
+                    "[SAR #{raw_sample_aspect_ratio} DAR #{raw_display_aspect_ratio}]"
       elsif audio?
         @overview = "#{codec_name} " \
                     "(#{codec_tag_string} / #{codec_tag}), " \
@@ -159,15 +160,7 @@ module FFMPEG
     #
     # @return [Integer]
     def width
-      rotated? ? @height : @width
-    end
-
-    # The raw width of the stream.
-    # This is the width of the stream without considering rotation.
-    #
-    # @return [Integer]
-    def raw_width
-      @width
+      rotated? ? @raw_height : @raw_width
     end
 
     # The height of the stream.
@@ -175,15 +168,7 @@ module FFMPEG
     #
     # @return [Integer]
     def height
-      rotated? ? @width : @height
-    end
-
-    # The raw height of the stream.
-    # This is the height of the stream without considering rotation.
-    #
-    # @return [Integer]
-    def raw_height
-      @height
+      rotated? ? @raw_width : @raw_height
     end
 
     # The resolution of the stream.
@@ -202,13 +187,13 @@ module FFMPEG
     # If the stream is rotated, the inverted aspect ratio is returned.
     #
     # @return [Rational, nil]
-    def calculated_aspect_ratio
-      return @calculated_aspect_ratio unless @calculated_aspect_ratio.nil?
+    def display_aspect_ratio
+      return @display_aspect_ratio unless @display_aspect_ratio.nil?
 
-      @calculated_aspect_ratio = calculate_aspect_ratio(display_aspect_ratio)
-      @calculated_aspect_ratio ||= Rational(width, height) if width && height
+      @display_aspect_ratio = calculate_aspect_ratio(@raw_display_aspect_ratio)
+      @display_aspect_ratio ||= Rational(width, height) if width && height
 
-      @calculated_aspect_ratio
+      @display_aspect_ratio
     end
 
     # The calculated pixel aspect ratio of the stream.
@@ -217,11 +202,11 @@ module FFMPEG
     # If the stream is rotated, the inverted aspect ratio is returned.
     #
     # @return [Rational]
-    def calculated_pixel_aspect_ratio
-      return @calculated_pixel_aspect_ratio unless @calculated_pixel_aspect_ratio.nil?
+    def sample_aspect_ratio
+      return @sample_aspect_ratio unless @sample_aspect_ratio.nil?
 
-      @calculated_pixel_aspect_ratio = calculate_aspect_ratio(sample_aspect_ratio)
-      @calculated_pixel_aspect_ratio ||= Rational(1)
+      @sample_aspect_ratio = calculate_aspect_ratio(@raw_sample_aspect_ratio)
+      @sample_aspect_ratio ||= Rational(1)
     end
 
     protected

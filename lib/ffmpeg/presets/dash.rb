@@ -28,6 +28,8 @@ module FFMPEG
         super(name:, filename:, metadata:) do
           threads preset.threads if preset.threads
           format_name 'dash'
+          use_template 1
+          use_timeline 1
           segment_duration preset.segment_duration
 
           muxing_flags 'frag_keyframe+empty_moov+default_base_moof'

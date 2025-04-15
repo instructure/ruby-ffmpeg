@@ -270,6 +270,13 @@ module FFMPEG
       default_video_stream&.display_aspect_ratio
     end
 
+    # Returns the raw display aspect ratio of the default video stream (if any).
+    #
+    # @return [String, nil]
+    autoload def raw_display_aspect_ratio
+      default_video_stream&.raw_display_aspect_ratio
+    end
+
     # Returns the sample aspect ratio of the default video stream (if any).
     #
     # @return [String, nil]
@@ -277,18 +284,11 @@ module FFMPEG
       default_video_stream&.sample_aspect_ratio
     end
 
-    # Returns the calculated aspect ratio of the default video stream (if any).
+    # Returns the raw sample aspect ratio of the default video stream (if any).
     #
     # @return [String, nil]
-    autoload def calculated_aspect_ratio
-      default_video_stream&.calculated_aspect_ratio
-    end
-
-    # Returns the calculated pixel aspect ratio of the default video stream (if any).
-    #
-    # @return [String, nil]
-    autoload def calculated_pixel_aspect_ratio
-      default_video_stream&.calculated_pixel_aspect_ratio
+    autoload def raw_sample_aspect_ratio
+      default_video_stream&.raw_sample_aspect_ratio
     end
 
     # Returns the pixel format of the default video stream (if any).

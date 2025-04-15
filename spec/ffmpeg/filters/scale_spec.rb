@@ -51,7 +51,7 @@ module FFMPEG
 
         context 'when the aspect ratio is higher than the max_width and max_height' do
           it 'returns a contained scale filter that scales to width' do
-            expect(media).to receive(:calculated_aspect_ratio).and_return(2)
+            expect(media).to receive(:display_aspect_ratio).and_return(2)
             expect(described_class.contained(media, max_width: 640, max_height: 480).to_s).to eq('scale=w=640:h=-2')
           end
         end

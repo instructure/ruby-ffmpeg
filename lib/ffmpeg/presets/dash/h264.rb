@@ -278,48 +278,20 @@ module FFMPEG
             h264_presets = preset.usable_h264_presets(media)
 
             if media.video_streams?
-              # Split the default video stream into multiple streams,
-              # one for each usable H.264 preset (e.g.: [v:0]split=2[v0][v1]).
-              split_filter =
-                Filters
-                .split(h264_presets.length)
-                .with_input_link!(media.video_mapping_id)
-                .with_output_links!(*h264_presets.each_with_index.map { |_, index| "v#{index}" })
-
-              # Scale the split video streams to the desired resolutions
-              # and frame rates (e.g.: [v0]scale=640:360,fps=30[v0out]).
-              # We also apply the desired pixel format to the video stream,
-              # as well as set the display aspect ratio to the calculated aspect ratio
-              # to resolve potential issues with different aspect ratios.
-              stream_filter_graphs =
-                h264_presets.each_with_index.map do |h264_preset, index|
-                  fps_filter = Filters.fps(adjusted_frame_rate(h264_preset.frame_rate))
-                  format_filter = h264_preset.format_filter
-                  scale_filter = h264_preset.scale_filter(media)
-                  dar_filter = Filters.set_dar(media.calculated_aspect_ratio) if media.calculated_aspect_ratio
-
-                  stream_filters = [fps_filter, format_filter, scale_filter, dar_filter].compact
-                  stream_filters.first.with_input_link!("v#{index}")
-                  stream_filters.last.with_output_link!("v#{index}out")
-
-                  Filter.join(*stream_filters)
-                end
-
-              # Apply the generated filter complex to the output.
-              filter_complex split_filter, *stream_filter_graphs
-
-              # Force keyframes at the specified interval.
-              force_key_frames "expr:gte(t,n_forced*#{preset.keyframe_interval})"
-
-              # Force aspect ratio to the calculated aspect ratio.
-              aspect media.calculated_aspect_ratio if media.calculated_aspect_ratio
-
-              # Map the scaled video streams with the desired H.264 parameters.
+              # Use the default video stream for all representations.
               h264_presets.each_with_index do |h264_preset, index|
-                map "[v#{index}out]" do
+                map media.video_mapping_id do
+                  frame_rate = adjusted_frame_rate(h264_preset.frame_rate)
+                  filters Filters.fps(frame_rate),
+                          h264_preset.format_filter,
+                          h264_preset.scale_filter(media),
+                          h264_preset.dar_filter(media),
+                          stream_index: index
                   video_preset h264_preset.video_preset, stream_index: index
                   video_profile h264_preset.video_profile, stream_index: index
-                  constant_rate_factor h264_preset.constant_rate_factor, stream_id: "v:#{index}"
+                  constant_rate_factor h264_preset.constant_rate_factor, stream_type: 'v', stream_index: index
+                  min_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
+                  max_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
                 end
               end
             end

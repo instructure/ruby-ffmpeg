@@ -207,6 +207,8 @@ module FFMPEG
     # Adds a new filter to the command arguments.
     #
     # @param filter [FFMPEG::Filter] The filter to add.
+    # @param stream_id [String] The stream ID to target (see stream_arg).
+    # @param stream_index [String] The stream index to target (see stream_arg).
     # @return [self]
     #
     # @example
@@ -214,15 +216,19 @@ module FFMPEG
     #    filter FFMPEG::Filters.scale(width: -2, height: 1080)
     #  end
     #  args.to_s # "-vf scale=w=-2:h=1080"
-    def filter(filter)
-      filters(filter)
+    def filter(filter, stream_id: nil, stream_index: nil)
+      filters(filter, stream_id:, stream_index:)
     end
 
     # Adds multiple filters to the command arguments
     # in a single filter chain.
     #
     # @param filters [Array<FFMPEG::Filter>] The filters to add.
+    # @param stream_id [String] The stream ID to target (see stream_arg).
+    # @param stream_index [String] The stream index to target (see stream_arg).
     # @return [self]
+    #
+    # @note Make sure not to mix video and audio filters when using stream_id or stream_index.
     #
     # @example
     #  args = FFMPEG::RawCommandArgs.compose do
@@ -230,10 +236,10 @@ module FFMPEG
     #            FFMPEG::Filters.fps(24),
     #            FFMPEG::Filters.silence_detect
     #  end
-    #  args.to_s # "-vf scale=w=-2:h=1080,fps=24 -af silencedetect"
-    def filters(*filters)
+    #  args.to_s # "-filter:v scale=w=-2:h=1080,fps=24 -filter:a silencedetect"
+    def filters(*filters, stream_id: nil, stream_index: nil)
       filters.compact.group_by(&:type).each do |type, group|
-        arg("#{type.to_s[0]}f", Filter.join(*group))
+        stream_arg('filter', Filter.join(*group), stream_type: type.to_s[0], stream_id:, stream_index:)
       end
 
       self
@@ -242,6 +248,8 @@ module FFMPEG
     # Adds a new bitstream filter to the command arguments.
     #
     # @param filter [FFMPEG::Filter] The bitstream filter to add.
+    # @param stream_id [String] The stream ID to target (see stream_arg).
+    # @param stream_index [String] The stream index to target (see stream_arg).
     # @return [self]
     #
     # @example
@@ -249,14 +257,18 @@ module FFMPEG
     #    bitstream_filter FFMPEG::Filter.new(:video, 'h264_mp4toannexb')
     #  end
     #  args.to_s # "-bsf:v h264_mp4toannexb"
-    def bitstream_filter(filter)
-      bitstream_filters(filter)
+    def bitstream_filter(filter, stream_id: nil, stream_index: nil)
+      bitstream_filters(filter, stream_id:, stream_index:)
     end
 
     # Adds multiple bitstream filters to the command arguments.
     #
     # @param filters [Array<FFMPEG::Filter>] The bitstream filters to add.
+    # @param stream_id [String] The stream ID to target (see stream_arg).
+    # @param stream_index [String] The stream index to target (see stream_arg).
     # @return [self]
+    #
+    # @note Make sure not to mix video and audio filters when using stream_id or stream_index.
     #
     # @example
     #  args = FFMPEG::RawCommandArgs.compose do
@@ -264,9 +276,9 @@ module FFMPEG
     #                      FFMPEG::Filter.new(:audio, 'aac_adtstoasc')
     #  end
     #  args.to_s # "-bsf:v h264_mp4toannexb -bsf:a aac_adtstoasc"
-    def bitstream_filters(*filters)
+    def bitstream_filters(*filters, stream_id: nil, stream_index: nil)
       filters.compact.group_by(&:type).each do |type, group|
-        arg("bsf:#{type.to_s[0]}", Filter.join(*group))
+        stream_arg('bsf', Filter.join(*group), stream_type: type.to_s[0], stream_id:, stream_index:)
       end
 
       self
@@ -381,7 +393,7 @@ module FFMPEG
     # Sets a video codec in the command arguments.
     #
     # @param value [String] The video codec to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -395,14 +407,14 @@ module FFMPEG
     #    video_codec_name 'libx264', stream_index: 0
     #  end
     #  args.to_s # "-c:v:0 libx264"
-    def video_codec_name(value, stream_index: nil)
-      stream_arg('c', value, stream_type: 'v', stream_index:)
+    def video_codec_name(value, **kwargs)
+      stream_arg('c', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a video bit rate in the command arguments.
     #
     # @param value [String, Numeric] The video bit rate to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -416,8 +428,8 @@ module FFMPEG
     #    video_bit_rate '128k', stream_index: 0
     #  end
     #  args.to_s # "-b:v:0 128k"
-    def video_bit_rate(value, stream_index: nil)
-      stream_arg('b', value, stream_type: 'v', stream_index:)
+    def video_bit_rate(value, **kwargs)
+      stream_arg('b', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a minimum video bit rate in the command arguments.
@@ -451,7 +463,7 @@ module FFMPEG
     # Sets a video preset in the command arguments.
     #
     # @param value [String] The video preset to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -465,14 +477,14 @@ module FFMPEG
     #    video_preset 'fast', stream_index: 0
     #  end
     #  args.to_s # "-preset:v:0 fast"
-    def video_preset(value, stream_index: nil)
-      stream_arg('preset', value, stream_type: 'v', stream_index:)
+    def video_preset(value, **kwargs)
+      stream_arg('preset', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a video profile in the command arguments.
     #
     # @param value [String] The video profile to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -486,14 +498,14 @@ module FFMPEG
     #    video_profile 'high', stream_index: 0
     #  end
     #  args.to_s # "-profile:v:0 high"
-    def video_profile(value, stream_index: nil)
-      stream_arg('profile', value, stream_type: 'v', stream_index:)
+    def video_profile(value, **kwargs)
+      stream_arg('profile', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a video quality in the command arguments.
     #
     # @param value [String] The video quality to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -507,8 +519,8 @@ module FFMPEG
     #    video_quality '2', stream_index: 0
     #  end
     #  args.to_s # "-q:v:0 2"
-    def video_quality(value, stream_index: nil)
-      stream_arg('q', value, stream_type: 'v', stream_index:)
+    def video_quality(value, **kwargs)
+      stream_arg('q', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a frame rate in the command arguments.
@@ -556,6 +568,7 @@ module FFMPEG
     # Sets an aspect ratio in the command arguments.
     #
     # @param value [String] The aspect ratio to set.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -563,14 +576,15 @@ module FFMPEG
     #    aspect_ratio '16:9'
     #  end
     #  args.to_s # "-aspect 16:9"
-    def aspect_ratio(value)
-      arg('aspect', value)
+    def aspect_ratio(value, **kwargs)
+      stream_arg('aspect', value, stream_type: 'v', **kwargs)
     end
 
     # Sets a minimum keyframe interval in the command arguments.
     # This is used for adaptive streaming.
     #
     # @param value [String, Numeric] The minimum keyframe interval to set.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -578,14 +592,15 @@ module FFMPEG
     #    min_keyframe_interval 48
     #  end
     #  args.to_s # "-keyint_min 48"
-    def min_keyframe_interval(value)
-      arg('keyint_min', value)
+    def min_keyframe_interval(value, **kwargs)
+      stream_arg('keyint_min', value, **kwargs)
     end
 
     # Sets a maximum keyframe interval in the command arguments.
     #
     # This is used for adaptive streaming.
     # @param value [String, Numeric] The maximum keyframe interval to set.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -593,14 +608,15 @@ module FFMPEG
     #    max_keyframe_interval 48
     #  end
     #  args.to_s # "-g 48"
-    def max_keyframe_interval(value)
-      arg('g', value)
+    def max_keyframe_interval(value, **kwargs)
+      stream_arg('g', value, **kwargs)
     end
 
     # Sets a scene change threshold in the command arguments.
     # This is used for adaptive streaming.
     #
     # @param value [String, Numeric] The scene change threshold to set.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -608,8 +624,8 @@ module FFMPEG
     #    scene_change_threshold 0
     #  end
     #  args.to_s # "-sc_threshold 0"
-    def scene_change_threshold(value)
-      arg('sc_threshold', value)
+    def scene_change_threshold(value, **kwargs)
+      stream_arg('sc_threshold', value, **kwargs)
     end
 
     # =================== #
@@ -619,7 +635,7 @@ module FFMPEG
     # Sets an audio codec in the command arguments.
     #
     # @param value [String] The audio codec to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -633,14 +649,14 @@ module FFMPEG
     #    audio_codec_name 'aac', stream_index: 0
     #  end
     #  args.to_s # "-c:a:0 aac"
-    def audio_codec_name(value, stream_index: nil)
-      stream_arg('c', value, stream_type: 'a', stream_index:)
+    def audio_codec_name(value, **kwargs)
+      stream_arg('c', value, stream_type: 'a', **kwargs)
     end
 
     # Sets an audio bit rate in the command arguments.
     #
     # @param value [String, Numeric] The audio bit rate to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -654,8 +670,8 @@ module FFMPEG
     #    audio_bit_rate '128k', stream_index: 0
     #  end
     #  args.to_s # "-b:a:0 128k"
-    def audio_bit_rate(value, stream_index: nil)
-      stream_arg('b', value, stream_type: 'a', stream_index:)
+    def audio_bit_rate(value, **kwargs)
+      stream_arg('b', value, stream_type: 'a', **kwargs)
     end
 
     # Sets an audio sample rate in the command arguments.
@@ -689,7 +705,7 @@ module FFMPEG
     # Sets an audio preset in the command arguments.
     #
     # @param value [String] The audio preset to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -703,14 +719,14 @@ module FFMPEG
     #    audio_preset 'aac_low', stream_index: 0
     #  end
     #  args.to_s # "-profile:a:0 aac_low"
-    def audio_preset(value, stream_index: nil)
-      stream_arg('preset', value, stream_type: 'a', stream_index:)
+    def audio_preset(value, **kwargs)
+      stream_arg('preset', value, stream_type: 'a', **kwargs)
     end
 
     # Sets an audio profile in the command arguments.
     #
     # @param value [String] The audio profile to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -724,14 +740,14 @@ module FFMPEG
     #    audio_profile 'aac_low', stream_index: 0
     #  end
     #  args.to_s # "-profile:a:0 aac_low"
-    def audio_profile(value, stream_index: nil)
-      stream_arg('profile', value, stream_type: 'a', stream_index:)
+    def audio_profile(value, **kwargs)
+      stream_arg('profile', value, stream_type: 'a', **kwargs)
     end
 
     # Sets an audio quality in the command arguments.
     #
     # @param value [String] The audio quality to set.
-    # @param stream_index [String] The stream index to target.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
     #
     # @example
@@ -745,8 +761,8 @@ module FFMPEG
     #    audio_quality '2', stream_index: 0
     #  end
     #  args.to_s # "-q:a:0 2"
-    def audio_quality(value, stream_index: nil)
-      stream_arg('q', value, stream_type: 'a', stream_index:)
+    def audio_quality(value, **kwargs)
+      stream_arg('q', value, stream_type: 'a', **kwargs)
     end
 
     # Sets the audio sync in the command arguments.
@@ -771,7 +787,7 @@ module FFMPEG
     end
 
     def method_missing(name, *args)
-      arg(name, args.first)
+      arg(name.to_s, args.first)
     end
   end
 end
