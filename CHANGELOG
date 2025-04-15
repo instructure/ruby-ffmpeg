@@ -1,3 +1,20 @@
+== 7.0.0-beta.12 2025-04-15
+
+Breaking Changes:
+* The `display_aspect_ratio` and `sample_aspect_ratio` methods have been renamed to
+  `raw_display_aspect_ratio` and `raw_sample_aspect_ratio` respectively on both
+  the Media and Stream classes.
+* The `calculated_aspect_ratio` and `calculated_pixel_aspect_ratio` methods have been
+  renamed to `display_aspect_ratio` and `sample_aspect_ratio` respectively on both
+  the Media and Stream classes.
+* Rolled back zlib scale changes (they caused more errors than what they resolved).
+
+Improvements:
+* Added more getters for color information to the Media class.
+* Added more options to the scale filter.
+* Greatly simplified the MPEG-DASH H.264 preset.
+* Added support for stream specifiers in many RawCommandArgs methods.
+
 == 7.0.0-beta.11 2025-04-10
 
 Improvements:
