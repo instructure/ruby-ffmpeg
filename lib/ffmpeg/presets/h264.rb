@@ -19,7 +19,6 @@ module FFMPEG
         frame_rate: 30,
         constant_rate_factor: 28,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -35,7 +34,6 @@ module FFMPEG
           pixel_format:,
           max_width: 256,
           max_height: 144,
-          zlib:,
           &
         )
       end
@@ -51,7 +49,6 @@ module FFMPEG
         frame_rate: 30,
         constant_rate_factor: 28,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -67,7 +64,6 @@ module FFMPEG
           pixel_format:,
           max_width: 426,
           max_height: 240,
-          zlib:,
           &
         )
       end
@@ -83,7 +79,6 @@ module FFMPEG
         frame_rate: 30,
         constant_rate_factor: 28,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -99,7 +94,6 @@ module FFMPEG
           pixel_format:,
           max_width: 640,
           max_height: 360,
-          zlib:,
           &
         )
       end
@@ -115,7 +109,6 @@ module FFMPEG
         frame_rate: 30,
         constant_rate_factor: 27,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -131,7 +124,6 @@ module FFMPEG
           pixel_format:,
           max_width: 854,
           max_height: 480,
-          zlib:,
           &
         )
       end
@@ -147,7 +139,6 @@ module FFMPEG
         frame_rate: 60,
         constant_rate_factor: 27,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -163,7 +154,6 @@ module FFMPEG
           pixel_format:,
           max_width: 1280,
           max_height: 720,
-          zlib:,
           &
         )
       end
@@ -179,7 +169,6 @@ module FFMPEG
         frame_rate: 60,
         constant_rate_factor: 27,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -195,7 +184,6 @@ module FFMPEG
           pixel_format:,
           max_width: 1920,
           max_height: 1080,
-          zlib:,
           &
         )
       end
@@ -211,7 +199,6 @@ module FFMPEG
         frame_rate: 60,
         constant_rate_factor: 26,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -227,7 +214,6 @@ module FFMPEG
           pixel_format:,
           max_width: 2560,
           max_height: 1440,
-          zlib:,
           &
         )
       end
@@ -243,7 +229,6 @@ module FFMPEG
         frame_rate: 60,
         constant_rate_factor: 26,
         pixel_format: 'yuv420p',
-        zlib: true,
         &
       )
         H264.new(
@@ -259,7 +244,6 @@ module FFMPEG
           pixel_format:,
           max_width: 3840,
           max_height: 2160,
-          zlib:,
           &
         )
       end
@@ -282,7 +266,6 @@ module FFMPEG
       # @param pixel_format [String] The pixel format to use.
       # @param max_width [Integer] The maximum width of the video.
       # @param max_height [Integer] The maximum height of the video.
-      # @param zlib [Boolean] Whether to use zlib for the scale filter.
       # @yield The block to execute to compose the command arguments.
       def initialize(
         name: nil,
@@ -297,7 +280,6 @@ module FFMPEG
         pixel_format: 'yuv420p',
         max_width: nil,
         max_height: nil,
-        zlib: true,
         &
       )
         if max_width && !max_width.is_a?(Numeric)
@@ -317,7 +299,6 @@ module FFMPEG
         @pixel_format = pixel_format
         @max_width = max_width
         @max_height = max_height
-        @zlib = zlib
         preset = self
 
         super(name:, filename:, metadata:) do
@@ -369,7 +350,7 @@ module FFMPEG
       def scale_filter(media)
         return unless @max_width || @max_height
 
-        Filters::Scale.contained(media, zlib: @zlib, max_width: @max_width, max_height: @max_height)
+        Filters::Scale.contained(media, max_width: @max_width, max_height: @max_height)
       end
     end
   end
