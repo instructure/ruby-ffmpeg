@@ -311,6 +311,9 @@ module FFMPEG
               # Force keyframes at the specified interval.
               force_key_frames "expr:gte(t,n_forced*#{preset.keyframe_interval})"
 
+              # Force aspect ratio to the calculated aspect ratio.
+              aspect media.calculated_aspect_ratio if media.calculated_aspect_ratio
+
               # Map the scaled video streams with the desired H.264 parameters.
               h264_presets.each_with_index do |h264_preset, index|
                 map "[v#{index}out]" do
