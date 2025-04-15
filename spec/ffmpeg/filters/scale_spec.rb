@@ -75,9 +75,6 @@ module FFMPEG
 
       describe '#to_s' do
         it 'returns the filter as a string' do
-          filter = described_class.new(zlib: true, width: 640, height: 480, algorithm: 'lanczos')
-          expect(filter.to_s).to eq('zscale=w=640:h=480:f=lanczos')
-
           filter = described_class.new(width: 'iw/2', height: 'ih/2', algorithm: 'lanczos')
           expect(filter.to_s).to eq('scale=w=iw/2:h=ih/2:flags=lanczos')
 

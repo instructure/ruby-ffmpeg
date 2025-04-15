@@ -6,7 +6,6 @@ module FFMPEG
   module Filters # rubocop:disable Style/Documentation
     class << self
       def scale(
-        zlib: false,
         width: nil,
         height: nil,
         algorithm: nil,
@@ -19,10 +18,11 @@ module FFMPEG
         in_color_transfer: nil,
         out_color_transfer: nil,
         in_chroma_location: nil,
-        out_chroma_location: nil
+        out_chroma_location: nil,
+        force_original_aspect_ratio: nil,
+        force_divisible_by: nil
       )
         Scale.new(
-          zlib:,
           width:,
           height:,
           algorithm:,
@@ -35,12 +35,14 @@ module FFMPEG
           in_color_transfer:,
           out_color_transfer:,
           in_chroma_location:,
-          out_chroma_location:
+          out_chroma_location:,
+          force_original_aspect_ratio:,
+          force_divisible_by:
         )
       end
     end
 
-    # The Scale class uses the scale (or zscale) filter
+    # The Scale class uses the scale filter
     # to resize a multimedia stream.
     class Scale < Filter
       NEAREST_DIMENSION = -1
@@ -54,6 +56,7 @@ module FFMPEG
         # @param media [FFMPEG::Media] The media to fit.
         # @param max_width [Numeric] The maximum width to fit.
         # @param max_height [Numeric] The maximum height to fit.
+        # @param kwargs [Hash] Additional options for the scale filter.
         # @return [FFMPEG::Filters::Scale] The scale filter.
         def contained(media, max_width: nil, max_height: nil, **kwargs)
           unless media.is_a?(FFMPEG::Media)
@@ -96,10 +99,10 @@ module FFMPEG
                   :in_color_range, :out_color_range,
                   :in_color_primaries, :out_color_primaries,
                   :in_color_transfer, :out_color_transfer,
-                  :in_chroma_location, :out_chroma_location
+                  :in_chroma_location, :out_chroma_location,
+                  :force_original_aspect_ratio, :force_divisible_by
 
       def initialize(
-        zlib: false,
         width: nil,
         height: nil,
         algorithm: nil,
@@ -112,7 +115,9 @@ module FFMPEG
         in_color_transfer: nil,
         out_color_transfer: nil,
         in_chroma_location: nil,
-        out_chroma_location: nil
+        out_chroma_location: nil,
+        force_original_aspect_ratio: nil,
+        force_divisible_by: nil
       )
         if !width.nil? && !width.is_a?(Numeric) && !width.is_a?(String)
           raise ArgumentError, "Unknown width format #{width.class}, expected #{Numeric} or #{String}"
@@ -135,50 +140,32 @@ module FFMPEG
         @out_color_transfer = out_color_transfer
         @in_chroma_location = in_chroma_location
         @out_chroma_location = out_chroma_location
+        @force_original_aspect_ratio = force_original_aspect_ratio
+        @force_divisible_by = force_divisible_by
 
-        super(:video, zlib ? 'zscale' : 'scale')
-      end
-
-      def zlib?
-        @name.start_with?('z')
+        super(:video, 'scale')
       end
 
       protected
 
       def format_kwargs
-        if zlib?
-          super(
-            w: @width,
-            h: @height,
-            f: @algorithm,
-            min: @in_color_space,
-            m: @out_color_space,
-            rin: @in_color_range,
-            r: @out_color_range,
-            pin: @in_color_primaries,
-            p: @out_color_primaries,
-            tin: @in_color_transfer,
-            t: @out_color_transfer,
-            cin: @in_chroma_location,
-            c: @out_chroma_location
-          )
-        else
-          super(
-            w: @width,
-            h: @height,
-            flags: @algorithm && [@algorithm],
-            in_color_matrix: @in_color_space,
-            out_color_matrix: @out_color_space,
-            in_range: @in_color_range,
-            out_range: @out_color_range,
-            in_primaries: @in_color_primaries,
-            out_primaries: @out_color_primaries,
-            in_transfer: @in_color_transfer,
-            out_transfer: @out_color_transfer,
-            in_chroma_loc: @in_chroma_location,
-            out_chroma_loc: @out_chroma_location
-          )
-        end
+        super(
+          w: @width,
+          h: @height,
+          flags: @algorithm && [@algorithm],
+          in_color_matrix: @in_color_space,
+          out_color_matrix: @out_color_space,
+          in_range: @in_color_range,
+          out_range: @out_color_range,
+          in_primaries: @in_color_primaries,
+          out_primaries: @out_color_primaries,
+          in_transfer: @in_color_transfer,
+          out_transfer: @out_color_transfer,
+          in_chroma_loc: @in_chroma_location,
+          out_chroma_loc: @out_chroma_location,
+          force_original_aspect_ratio: @force_original_aspect_ratio,
+          force_divisible_by: @force_divisible_by
+        )
       end
     end
   end
