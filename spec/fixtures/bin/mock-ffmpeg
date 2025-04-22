@@ -1,6 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+def iterations
+  return @iterations if defined?(@iterations)
+
+  @iterations ||= ARGV.find { |arg| arg =~ /-n/ }&.split('=')&.last&.to_i
+end
+
+def progress?
+  return @progress if defined?(@progress)
+
+  @progress ||= ARGV.include?('-progress')
+end
+
 warn <<~OUTPUT
   ffmpeg version 0.11.1 Copyright (c) 2000-2012 the FFmpeg developers
     built on Jun 27 2012 11:39:49 with llvm_gcc 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2335.15.00)
@@ -29,17 +41,17 @@ warn <<~OUTPUT
       Metadata:
         creation_time   : 1970-01-01 00:00:00
         handler_name    : SoundHandler
-OUTPUT
-
-if ARGV.length > 2 # looks like we're trying to transcode
-  warn <<-OUTPUT
   Stream mapping:
     Stream #0:0 -> #0:0 (h264 -> libx264)
     Stream #0:1 -> #0:1 (aac -> libfaac)
   Press [q] to stop, [?] for help
-  OUTPUT
-  $stderr.write 'frame=   72 fps=0.0 q=32766.0 Lsize=     115kB time=00:00:07.00 bitrate= 134.6kbits/s'
-  loop { sleep 1 }
-else
-  warn 'At least one output file must be specified'
+OUTPUT
+
+n = 0
+loop do
+  $stderr.write 'frame=0 fps=0.0 q=0.0 Lsize=0kB time=00:00:00.00 bitrate=0.0kbits/s' if progress?
+
+  break if iterations && (n += 1) > iterations
+
+  sleep 1
 end

@@ -6,7 +6,6 @@ SimpleCov.start
 require 'bundler'
 Bundler.require
 
-require 'debug'
 require 'fileutils'
 require 'uri'
 require 'webmock/rspec'
