@@ -53,30 +53,17 @@ describe FFMPEG do
   end
 
   describe '.ffmpeg_execute' do
-    let(:args) { ['-i', fixture_media_file('hello.wav'), '-f', 'null', '/dev/null'] }
-
-    it 'returns the process status and yields reports' do
-      reports = []
-
-      status = described_class.ffmpeg_execute(
-        *args,
-        reporters: [FFMPEG::Reporters::Output]
-      ) do |report|
-        reports << report
-      end
+    it 'returns the process status' do
+      args = ['-i', fixture_media_file('hello.wav'), '-f', 'null', '-']
+      status = described_class.ffmpeg_execute(*args)
 
       expect(status).to be_a(FFMPEG::Status)
       expect(status.exitstatus).to eq(0)
-      expect(reports.length).to be >= 1
     end
 
     context 'when ffmpeg hangs' do
       before do
-        FFMPEG.ffmpeg_binary = fixture_file('bin/ffmpeg-hanging')
-      end
-
-      after do
-        FFMPEG.ffmpeg_binary = nil
+        described_class.ffmpeg_binary = fixture_file('bin/mock-ffmpeg')
       end
 
       context 'with IO timeout set' do
@@ -89,13 +76,13 @@ describe FFMPEG do
         end
 
         it 'raises IO::TimeoutError' do
-          expect { described_class.ffmpeg_execute(*args) }.to raise_error(IO::TimeoutError)
+          expect { described_class.ffmpeg_execute!('hello', 'world') }.to raise_error(IO::TimeoutError)
         end
       end
 
       context 'with operation timeout set' do
         it 'raises Timeout::Error' do
-          expect { described_class.ffmpeg_execute(*args, timeout: 0.5) }.to raise_error(Timeout::Error)
+          expect { described_class.ffmpeg_execute!('hello', 'world', timeout: 0.5) }.to raise_error(Timeout::Error)
         end
       end
     end
@@ -103,7 +90,43 @@ describe FFMPEG do
 
   describe '.ffmpeg_execute!' do
     it 'raises an error when the process is unsuccessful' do
-      expect { FFMPEG.ffmpeg_execute!('-v') }.to raise_error(FFMPEG::Error)
+      expect { described_class.ffmpeg_execute!('-v') }.to raise_error(FFMPEG::Error)
+    end
+
+    context 'when called in a subprocess' do
+      before do
+        described_class.ffmpeg_binary = fixture_file('bin/mock-ffmpeg')
+      end
+
+      context 'with exit signal traps' do
+        it 'does not raise an error' do
+          pid = fork do
+            Signal.trap('QUIT') {} # rubocop:disable Lint/EmptyBlock
+
+            described_class.ffmpeg_execute!('-n=3', '-progress', 'hello', 'world')
+          end
+
+          sleep 1
+          Process.kill('QUIT', pid)
+          Process.wait(pid)
+
+          expect($CHILD_STATUS&.exitstatus).to eq(0)
+        end
+      end
+
+      context 'without exit signal traps' do
+        it 'does not raise an error' do
+          pid = fork do
+            described_class.ffmpeg_execute!('-n=10', '-progress', 'hello', 'world')
+          end
+
+          sleep 1
+          Process.kill('QUIT', pid)
+          _, status = Process.wait2(pid)
+
+          expect(status.exitstatus).not_to eq(0)
+        end
+      end
     end
   end
 

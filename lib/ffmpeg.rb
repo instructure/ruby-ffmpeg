@@ -32,15 +32,6 @@ require_relative 'ffmpeg/status'
 require_relative 'ffmpeg/transcoder'
 require_relative 'ffmpeg/version'
 
-if RUBY_PLATFORM =~ /(win|w)(32|64)$/
-  begin
-    require 'win32/process'
-  rescue LoadError
-    'Warning: ffmpeg is missing the win32-process gem to properly handle hanging transcodings. ' \
-    'Install the gem (in Gemfile if using bundler) to avoid errors.'
-  end
-end
-
 # The FFMPEG module allows you to customise the behaviour of the FFMPEG library,
 # and provides a set of methods to directly interact with the ffmpeg and ffprobe binaries.
 #
@@ -51,8 +42,6 @@ end
 #   FFMPEG.ffmpeg_binary = '/usr/local/bin/ffmpeg'
 #   FFMPEG.ffprobe_binary = '/usr/local/bin/ffprobe'
 module FFMPEG
-  SIGKILL = RUBY_PLATFORM =~ /(win|w)(32|64)$/ ? 1 : 'SIGKILL'
-
   class << self
     attr_writer :logger, :reporters
     attr_accessor :threads, :timeout
@@ -145,7 +134,7 @@ module FFMPEG
     # Execute a ffmpeg command.
     #
     # @param args [Array<String>] The arguments to pass to ffmpeg.
-    # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
+    # @param reporters [Array<Class<FFMPEG::Reporters::Output>>] The reporters to use to parse the output.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Status]
     def ffmpeg_execute(*args, status: nil, reporters: nil, timeout: nil)
