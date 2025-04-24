@@ -1,3 +1,16 @@
+== 7.0.0-beta.14 2025-04-25
+
+Improvements:
+* Built-in presets now use the closest standard frame rate to the input file
+  when the input file has lower frame rate than the preset.
+* Increased the keyframe interval of the MPEG-DASH H.264 preset to 2 seconds by default.
+  This results in a more efficient encoding process and smaller file sizes, while
+  still maintaining a good quality.
+
+Fixes:
+* Fixed some audio timeline shifting issues with the MPEG-DASH H.264 preset due to which
+  some players would skip to the end of the video upon loading.
+
 == 7.0.0-beta.13 2025-04-23
 
 Fixes:
