@@ -15,6 +15,8 @@ module FFMPEG
   #  end
   #  args.to_s # "-map 0:v:0 -c:v:0 libx264 -r 30"
   class CommandArgs < RawCommandArgs
+    STANDARD_FRAME_RATES = [12, 24, 25, 30, 50, 60, 90, 120, 240].freeze
+
     class << self
       # Composes a new instance of CommandArgs with the given media.
       # The block is evaluated in the context of the new instance.
@@ -96,7 +98,10 @@ module FFMPEG
     # @param target_value [Integer, Float] The target frame rate.
     # @return [Numeric]
     def adjusted_frame_rate(target_value)
-      [media.frame_rate, target_value].compact.min
+      return target_value if media.frame_rate.nil?
+      return target_value if media.frame_rate > target_value
+
+      STANDARD_FRAME_RATES.min_by { (_1 - media.frame_rate).abs }
     end
 
     # Returns the minimum of the current video bit rate and the target value.

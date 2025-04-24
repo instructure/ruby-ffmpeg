@@ -5,11 +5,19 @@ require_relative '../spec_helper'
 module FFMPEG
   describe CommandArgs do
     describe '#frame_rate' do
-      context 'when the media frame rate is lower than the target value' do
-        it 'sets the frame rate to the media frame rate' do
+      context 'when the target value is nil' do
+        it 'does not set the frame rate' do
           media = instance_double(Media, frame_rate: 30)
+          args = CommandArgs.compose(media) { frame_rate nil }
+          expect(args.to_a).to eq(%w[])
+        end
+      end
+
+      context 'when the media frame rate is nil' do
+        it 'sets the frame rate to the target value' do
+          media = instance_double(Media, frame_rate: nil)
           args = CommandArgs.compose(media) { frame_rate 60 }
-          expect(args.to_a).to eq(%w[-r 30])
+          expect(args.to_a).to eq(%w[-r 60])
         end
       end
 
@@ -21,11 +29,19 @@ module FFMPEG
         end
       end
 
-      context 'when the target value is nil' do
-        it 'does not set the frame rate' do
-          media = instance_double(Media, frame_rate: 30)
-          args = CommandArgs.compose(media) { frame_rate nil }
-          expect(args.to_a).to eq(%w[])
+      context 'when the media frame rate is lower than the target value' do
+        it 'sets the frame rate to the closest standard value' do
+          {
+            0 => 12,
+            21 => 24,
+            26 => 25,
+            29.94 => 30,
+            480 => 240
+          }.each do |media_frame_rate, expected_value|
+            media = instance_double(Media, frame_rate: media_frame_rate)
+            args = CommandArgs.compose(media) { frame_rate 1000 }
+            expect(args.to_a).to eq(%W[-r #{expected_value}])
+          end
         end
       end
     end
