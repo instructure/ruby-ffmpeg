@@ -169,6 +169,7 @@ module FFMPEG
       frame_rate: 'r',
       pixel_format: 'pix_fmt',
       resolution: 's',
+      force_keyframes: 'force_key_frames',
       min_keyframe_interval: 'keyint_min',
       max_keyframe_interval: 'g',
       scene_change_threshold: 'sc_threshold',
