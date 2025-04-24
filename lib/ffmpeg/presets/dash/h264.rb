@@ -292,11 +292,14 @@ module FFMPEG
                   constant_rate_factor h264_preset.constant_rate_factor, stream_type: 'v', stream_index: index
                   min_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
                   max_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
+                  force_keyframes "expr:gte(t,n_forced*#{preset.keyframe_interval})", stream_index: index
                 end
               end
             end
 
             map media.audio_mapping_id do
+              # Reset the audio stream's timestamps to start from 0.
+              filter Filter.new(:audio, 'asetpts', expr: 'PTS-STARTPTS')
               audio_bit_rate h264_presets.first.audio_bit_rate
             end
           end

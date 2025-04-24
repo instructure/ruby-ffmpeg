@@ -580,8 +580,22 @@ module FFMPEG
       stream_arg('aspect', value, stream_type: 'v', **kwargs)
     end
 
+    # Sets a force keyframe interval in the command arguments.
+    #
+    # @param value [String, Numeric] The force keyframe interval to set.
+    # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
+    # @return [self]
+    #
+    # @example
+    #  args = FFMPEG::RawCommandArgs.compose do
+    #    force_keyframes 'expr:gte(t,n_forced*2)'
+    #  end
+    #  args.to_s # "-force_key_frames expr:gte(t,n_forced*2)"
+    def force_keyframes(value, **kwargs)
+      stream_arg('force_key_frames', value, **kwargs)
+    end
+
     # Sets a minimum keyframe interval in the command arguments.
-    # This is used for adaptive streaming.
     #
     # @param value [String, Numeric] The minimum keyframe interval to set.
     # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
@@ -598,7 +612,6 @@ module FFMPEG
 
     # Sets a maximum keyframe interval in the command arguments.
     #
-    # This is used for adaptive streaming.
     # @param value [String, Numeric] The maximum keyframe interval to set.
     # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
     # @return [self]
@@ -613,7 +626,6 @@ module FFMPEG
     end
 
     # Sets a scene change threshold in the command arguments.
-    # This is used for adaptive streaming.
     #
     # @param value [String, Numeric] The scene change threshold to set.
     # @param kwargs [Hash] The stream specific arguments to use (see stream_arg).
