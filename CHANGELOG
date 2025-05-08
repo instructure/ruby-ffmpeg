@@ -1,4 +1,9 @@
-== 7.0.0 2025-05-08
+== 7.1.0 2025-05-09
+
+Improvements:
+* Added new modular way of composing ffmpeg commands using the `FFMPEG::CommandArgs::Composable` module.
+
+== 7.0.0 2025-05-09
 
 (No changes since the last beta.)
 
