@@ -6,6 +6,55 @@ module FFMPEG
   describe RawCommandArgs do
     subject { RawCommandArgs.new }
 
+    describe '#use' do
+      let(:composable) do
+        Module.new do
+          include FFMPEG::CommandArgs::Composable
+
+          compose :foo do
+            foo 1
+          end
+
+          compose :bar do
+            bar 1
+          end
+        end
+      end
+
+      it 'uses a composable to generate arguments in a modular way' do
+        subject.use composable
+        expect(subject.to_a).to eq(%w[-foo 1 -bar 1])
+      end
+
+      context 'when given a non-array `only` keyword argument' do
+        it 'uses the composable to generate arguments with the specified only keyword' do
+          subject.use composable, only: :foo
+          expect(subject.to_a).to eq(%w[-foo 1])
+        end
+      end
+
+      context 'when given an array `only` keyword argument' do
+        it 'uses the composable to generate arguments with the specified only keyword' do
+          subject.use composable, only: %i[foo bar]
+          expect(subject.to_a).to eq(%w[-foo 1 -bar 1])
+        end
+      end
+
+      context 'when given a non-array `except` keyword argument' do
+        it 'uses the composable to generate arguments with the specified except keyword' do
+          subject.use composable, except: :foo
+          expect(subject.to_a).to eq(%w[-bar 1])
+        end
+      end
+
+      context 'when given an array `except` keyword argument' do
+        it 'uses the composable to generate arguments with the specified except keyword' do
+          subject.use composable, except: %i[foo bar]
+          expect(subject.to_a).to eq([])
+        end
+      end
+    end
+
     describe '#arg' do
       it 'adds the argument' do
         subject.arg('foo', 'bar')
