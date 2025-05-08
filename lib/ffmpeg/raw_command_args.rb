@@ -96,6 +96,44 @@ module FFMPEG
       @args
     end
 
+    # Adds a composable to the command arguments.
+    #
+    # @param composable [Module] The composable to add.
+    # @param only [Array] The names of the blocks to include.
+    # @param except [Array] The names of the blocks to exclude.
+    # @return [self]
+    #
+    # @example
+    #  module MyCommandArgs
+    #    include FFMPEG::CommandArgs::Composable
+    #
+    #    compose :h264 do
+    #      video_codec_name 'libx264'
+    #    end
+    #
+    #    compose :aac do
+    #      audio_codec_name 'aac'
+    #    end
+    #  end
+    #
+    #  args = FFMPEG::RawCommandArgs.compose do
+    #    use MyCommandArgs, only: %i[h264]
+    #  end
+    #  args.to_s # "-c:v libx264"
+    def use(composable, only: nil, except: nil)
+      only = [only].compact unless only.is_a?(Array)
+      except = [except].compact unless except.is_a?(Array)
+
+      composable.blocks&.each do |name, block|
+        next if !only.empty? && !only.include?(name)
+        next if !except.empty? && except.include?(name)
+
+        instance_exec(&block)
+      end
+
+      self
+    end
+
     # ==================== #
     # === COMMON UTILS === #
     # ==================== #
