@@ -14,7 +14,6 @@ module FFMPEG
         next unless media.remote?
 
         reconnect 1
-        reconnect_at_eof 1
         reconnect_streamed 1
         reconnect_on_network_error 1
         reconnect_on_http_error '500,502,503,504'
