@@ -1,4 +1,9 @@
-== 7.2.2 2025-05-09
+== 7.1.3 2025-06-05
+
+Fixes:
+* Ensure consistent bit rates for all video representations in the built-in MPEG-DASH presets.
+
+== 7.1.2 2025-05-09
 
 Fixes:
 * Removed `-reconnect_at_eof` from `FFMPEG::CommandArgs::NetworkStreaming` to prevent retries
