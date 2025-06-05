@@ -278,6 +278,13 @@ module FFMPEG
             h264_presets = preset.usable_h264_presets(media)
 
             if media.video_streams?
+              # Use the highest quality H.264 preset, profile and constant rate factor
+              # for all video representations, to make sure that the bitrates are
+              # consistent across all representations.
+              video_preset h264_presets.first.video_preset
+              video_profile h264_presets.first.video_profile
+              constant_rate_factor h264_presets.first.constant_rate_factor, stream_type: 'v'
+
               # Use the default video stream for all representations.
               h264_presets.each_with_index do |h264_preset, index|
                 map media.video_mapping_id do
@@ -287,9 +294,6 @@ module FFMPEG
                           h264_preset.scale_filter(media),
                           h264_preset.dar_filter(media),
                           stream_index: index
-                  video_preset h264_preset.video_preset, stream_index: index
-                  video_profile h264_preset.video_profile, stream_index: index
-                  constant_rate_factor h264_preset.constant_rate_factor, stream_type: 'v', stream_index: index
                   min_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
                   max_keyframe_interval preset.keyframe_interval * frame_rate, stream_index: index
                   force_keyframes "expr:gte(t,n_forced*#{preset.keyframe_interval})", stream_index: index
