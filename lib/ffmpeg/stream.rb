@@ -188,12 +188,12 @@ module FFMPEG
     #
     # @return [Rational, nil]
     def display_aspect_ratio
-      return @display_aspect_ratio unless @display_aspect_ratio.nil?
+      return @display_aspect_ratio if defined?(@display_aspect_ratio)
 
       @display_aspect_ratio = calculate_aspect_ratio(@raw_display_aspect_ratio)
-      @display_aspect_ratio ||= Rational(width, height) if width && height
+      return unless width && height && !height.zero?
 
-      @display_aspect_ratio
+      @display_aspect_ratio ||= Rational(width, height)
     end
 
     # The calculated pixel aspect ratio of the stream.
@@ -203,7 +203,7 @@ module FFMPEG
     #
     # @return [Rational]
     def sample_aspect_ratio
-      return @sample_aspect_ratio unless @sample_aspect_ratio.nil?
+      return @sample_aspect_ratio if defined?(@sample_aspect_ratio)
 
       @sample_aspect_ratio = calculate_aspect_ratio(@raw_sample_aspect_ratio)
       @sample_aspect_ratio ||= Rational(1)
