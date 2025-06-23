@@ -4,7 +4,8 @@ require_relative '../spec_helper'
 
 module FFMPEG
   describe RawCommandArgs do
-    subject { RawCommandArgs.new }
+    let(:context) { nil }
+    subject { RawCommandArgs.new(context:) }
 
     describe '#use' do
       let(:composable) do
@@ -51,6 +52,61 @@ module FFMPEG
         it 'uses the composable to generate arguments with the specified except keyword' do
           subject.use composable, except: %i[foo bar]
           expect(subject.to_a).to eq([])
+        end
+      end
+    end
+
+    describe '#context' do
+      context 'when the instance context is nil' do
+        it 'does not execute the block' do
+          subject.context(nil) do
+            subject.arg('foo', 'bar')
+          end
+          expect(subject.to_a).to eq([])
+        end
+      end
+
+      context 'when the instance context is not nil' do
+        let(:context) { { foo: true, bar: false } }
+
+        context 'and the matcher is a symbol' do
+          context 'that is a key in the context' do
+            it 'executes the block' do
+              subject.context(:foo) do
+                arg('foo', 'bar')
+              end
+              expect(subject.to_a).to eq(%w[-foo bar])
+            end
+          end
+
+          context 'that is not a key in the context' do
+            it 'does not execute the block' do
+              subject.context(:baz) do
+                arg('foo', 'bar')
+              end
+              expect(subject.to_a).to eq([])
+            end
+          end
+        end
+
+        context 'and the matcher is a hash' do
+          context 'that is a subset of the context' do
+            it 'executes the block' do
+              subject.context(foo: true) do
+                arg('foo', 'bar')
+              end
+              expect(subject.to_a).to eq(%w[-foo bar])
+            end
+          end
+
+          context 'that is not a subset of the context' do
+            it 'does not execute the block' do
+              subject.context(foo: false) do
+                arg('foo', 'bar')
+              end
+              expect(subject.to_a).to eq([])
+            end
+          end
         end
       end
     end

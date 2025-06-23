@@ -20,6 +20,7 @@ module FFMPEG
       # the method is treated as a new argument to add to the command arguments.
       #
       # @param block_args [Array] The arguments to pass to the block.
+      # @param context [Hash, nil] Additional context for composing the command arguments.
       # @yield The block to execute to compose the command arguments.
       # @return [FFMPEG::RawCommandArgs] The new set of raw command arguments.
       #
@@ -29,8 +30,8 @@ module FFMPEG
       #    audio_codec_name 'aac'
       #  end
       #  args.to_s # => "-c:v libx264 -c:a aac"
-      def compose(*block_args, &)
-        new.tap do |args|
+      def compose(*block_args, context: nil, &)
+        new(context:).tap do |args|
           args.instance_exec(*block_args, &) if block_given?
         end
       end
@@ -87,8 +88,9 @@ module FFMPEG
       end
     end
 
-    def initialize
+    def initialize(context: nil)
       @args = []
+      @context = context
     end
 
     # Returns the array representation of the command arguments.
@@ -130,6 +132,26 @@ module FFMPEG
 
         instance_exec(&block)
       end
+
+      self
+    end
+
+    # Executes the block if the specified matcher matches the context.
+    # The block is executed in the context of the command arguments.
+    #
+    # @param matcher [String, Symbol, Hash] The matcher to check against the context.
+    # @param & [Proc] The block to execute if the matcher matches.
+    # @return [self]
+    def context(matcher, &)
+      return if @context.nil?
+
+      if matcher.is_a?(Hash)
+        return unless @context >= matcher
+      else
+        return unless @context.key?(matcher)
+      end
+
+      instance_exec(&) if block_given?
 
       self
     end

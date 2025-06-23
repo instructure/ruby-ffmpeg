@@ -6,16 +6,6 @@ module FFMPEG
   # It also provides a method to raise an error if the subprocess
   # did not finish successfully.
   class Status
-    # Raised by #assert! if the status has a non-zero exit code.
-    class ExitError < Error
-      attr_reader :output
-
-      def initialize(message, output)
-        @output = output
-        super(message)
-      end
-    end
-
     attr_reader :duration, :output, :upstream
 
     def initialize
@@ -30,7 +20,7 @@ module FFMPEG
       message = @output.string.match(/\b(?:error|invalid|failed|could not)\b.+$/i)
       message ||= 'FFmpeg exited with non-zero exit status'
 
-      raise ExitError.new("#{message} (code: #{exitstatus})", @output.string)
+      raise ExitError.new("#{message} (code: #{exitstatus})", @output)
     end
 
     # Binds the status to an upstream Process::Status object.

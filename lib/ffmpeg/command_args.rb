@@ -22,9 +22,10 @@ module FFMPEG
       # The block is evaluated in the context of the new instance.
       #
       # @param media [FFMPEG::Media] The media to transcode.
-      # @return [FFMPEG::CommandArgs] The new FFMPEG::CommandArgs object.
-      def compose(media, &block)
-        new(media).tap do |args|
+      # @param context [Hash, nil] Additional context for composing the arguments.
+      # # @return [FFMPEG::CommandArgs] The new FFMPEG::CommandArgs object.
+      def compose(media, context: nil, &block)
+        new(media, context:).tap do |args|
           args.instance_exec(&block) if block_given?
         end
       end
@@ -33,9 +34,10 @@ module FFMPEG
     attr_reader :media
 
     # @param media [FFMPEG::Media] The media to transcode.
-    def initialize(media)
+    # @param context [Hash, nil] Additional context for composing the arguments.
+    def initialize(media, context: nil)
       @media = media
-      super()
+      super(context:)
     end
 
     # Sets the frame rate to the minimum of the current frame rate and the target value.

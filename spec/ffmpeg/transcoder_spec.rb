@@ -5,6 +5,8 @@ require_relative '../spec_helper'
 module FFMPEG
   describe Transcoder do
     describe '#process' do
+      let(:media) { Media.new(fixture_media_file('landscape@4k60.mp4')) }
+
       let(:preset1) do
         Preset.new(filename: '%<basename>s.mp4') do
           video_codec_name 'libx264'
@@ -31,14 +33,19 @@ module FFMPEG
         end
       end
 
+      let(:retries) { 0 }
+
       subject do
-        described_class.new(presets: [preset1, preset2]) do
+        described_class.new(presets: [preset1, preset2], retries:) do
           raw_arg '-noautorotate'
+
+          context :retry do
+            raw_arg '-xerror'
+          end
         end
       end
 
       it 'transcodes a multimedia file using the specified presets' do
-        media = Media.new(fixture_media_file('landscape@4k60.mp4'))
         output_path = File.join(tmp_dir, SecureRandom.hex(4))
 
         expect(media).to receive(:ffmpeg_execute).and_wrap_original do |method, *args, **kwargs, &block|
@@ -83,6 +90,32 @@ module FFMPEG
 
         expect(reports.length).to be >= 1
         expect(reports).to all(be_a(Reporters::Output))
+      end
+
+      context 'when the transcoding process finishes with non-zero exit status' do
+        let(:retries) { 1 }
+
+        it 'retries up to the set number of times' do
+          output_path = File.join(tmp_dir, SecureRandom.hex(4))
+
+          attempts = 0
+          status = double(Transcoder::Status, success?: false)
+          expect(media).to receive(:ffmpeg_execute).twice do |*_args, inargs:, **_kwargs|
+            attempts += 1
+
+            if attempts == 2
+              allow(status).to receive(:success?).and_return(true)
+              expect(inargs).to include('-xerror')
+            else
+              expect(inargs).not_to include('-xerror')
+            end
+
+            status
+          end
+
+          expect(subject.process(media, output_path)).to be(status)
+          expect(attempts).to eq(2)
+        end
       end
     end
 

@@ -35,15 +35,17 @@ module FFMPEG
     # Returns the command arguments for the given media.
     #
     # @param media [Media] The media to encode.
+    # @param context [Hash, nil] Additional context for composing the arguments.
     # @return [Array<String>] The command arguments.
-    def args(media)
-      @command_args_klass.compose(media, &@compose_args).to_a
+    def args(media, context: nil)
+      @command_args_klass.compose(media, context:, &@compose_args).to_a
     end
 
     # Transcode the media to the output path.
     #
     # @param media [Media] The media to transcode.
     # @param output_path [String, Pathname] The path to the output file.
+    # @param timeout [Integer, nil] The timeout for the transcoding process.
     # @yield The block to execute when progress is made.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
     def transcode(media, output_path, timeout: nil, &)
@@ -55,6 +57,7 @@ module FFMPEG
     #
     # @param media [Media] The media to transcode.
     # @param output_path [String, Pathname] The path to the output file.
+    # @param timeout [Integer, nil] The timeout for the transcoding process.
     # @yield The block to execute when progress is made.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
     def transcode!(media, output_path, timeout: nil, &)
