@@ -106,7 +106,12 @@ transcoder = FFMPEG::Transcoder.new(
   # to optimize the transcoding process.
   presets: [preset],
   # The reporters are used to generate reports during the transcoding process.
-  reporters: [FFMPEG::Reporters::Progress, FFMPEG::Reporters::Silence]
+  reporters: [FFMPEG::Reporters::Progress, FFMPEG::Reporters::Silence],
+  # The checks are used to validate the output files after the transcoding process.
+  # They can be symbols, in which case they refer to methods on the `FFMPEG::Transcoder::Status` class,
+  # or objects that respond to `call` (such as lambdas or procs), in which case they will be called with
+  # the `FFMPEG::Transcoder::Status` object as an argument.
+  checks: %i[exist?]
 ) do
   # This block sets up the input arguments of the ffmpeg command.
   # It uses the same DSL to define the arguments as the preset does for the output arguments.
@@ -131,7 +136,7 @@ status = transcoder.process(media, '/path/to/output') do |report|
   end
 end
 
-status.success? # true (would be false if ffmpeg fails to transcode the media)
+status.success? # true (returns true if the exit status is zero and all checks passed)
 status.exitstatus # 0 (the exit status of the ffmpeg command)
 status.paths # ['/path/to/output.mp4'] (the paths of the output files)
 status.media # [FFMPEG::Media] (the media objects of the output files)

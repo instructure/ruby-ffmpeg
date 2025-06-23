@@ -1,3 +1,17 @@
+== 8.0.0 2025-06-27
+
+Improvements:
+* Added support for retries in the `FFMPEG::Transcoder` class. This allows for more robust command
+  argument composing and thus more stable outputs.
+
+Breaking Changes:
+* The `FFMPEG::Transcoder#process!` method will now fail if the expected output files do not exist after
+  successful processing. This behaviour can be controled by passing `checks: []` to the transcoder
+  initializer.
+* The `FFMPEG::Status::ExitError` class has been renamed to `FFMPEG::ExitError`.
+* The `FFMPEG::ExitError` class now holds a reference to the `StringIO` output of the FFmpeg command
+  (before it contained the `String` representation).
+
 == 7.1.4 2025-06-23
 
 Fixes:
