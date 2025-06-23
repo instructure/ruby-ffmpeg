@@ -47,12 +47,21 @@ module FFMPEG
 
     attr_reader :name, :metadata, :presets, :reporters, :timeout
 
-    def initialize(name: nil, metadata: nil, presets: [], reporters: nil, timeout: nil, &compose_inargs)
+    def initialize(
+      name: nil,
+      metadata: nil,
+      presets: [],
+      reporters: nil,
+      retries: nil,
+      timeout: nil,
+      &compose_inargs
+    )
       @name = name
       @metadata = metadata
       @presets = presets
       @reporters = reporters
       @timeout = timeout
+      @retries = retries&.abs || 0
       @compose_inargs = compose_inargs
     end
 
@@ -63,34 +72,46 @@ module FFMPEG
     # @yield The block to execute to report the transcoding process.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
     def process(media, output_path, &)
-      media = Media.new(media, load: false) unless media.is_a?(Media)
+      status = nil
 
-      output_paths = []
-      output_path = Pathname.new(output_path)
-      output_dir = output_path.dirname
-      output_filename_kwargs = {
-        basename: output_path.basename(output_path.extname),
-        extname: output_path.extname
-      }
+      attempts = 0
+      while attempts <= @retries
+        media = Media.new(media, load: false) unless media.is_a?(Media)
+        context = { attempts: }
+        context[:retry] = true if attempts.positive?
 
-      args = []
-      @presets.each do |preset|
-        filename = preset.filename(**output_filename_kwargs)
-        args += preset.args(media)
-        args << (filename.nil? ? output_path.to_s : output_dir.join(filename).to_s)
-        output_paths << args.last
+        output_paths = []
+        output_path = Pathname.new(output_path)
+        output_dir = output_path.dirname
+        output_filename_kwargs = {
+          basename: output_path.basename(output_path.extname),
+          extname: output_path.extname
+        }
+
+        args = []
+        @presets.each do |preset|
+          filename = preset.filename(**output_filename_kwargs)
+          args += preset.args(media, context:)
+          args << (filename.nil? ? output_path.to_s : output_dir.join(filename).to_s)
+          output_paths << args.last
+        end
+
+        inargs = CommandArgs.compose(media, context:, &@compose_inargs).to_a
+        status = media.ffmpeg_execute(
+          *args,
+          inargs:,
+          reporters:,
+          timeout:,
+          status: Status.new(output_paths),
+          &
+        )
+
+        return status if status.success?
+
+        attempts += 1
       end
 
-      inargs = CommandArgs.compose(media, &@compose_inargs).to_a
-
-      media.ffmpeg_execute(
-        *args,
-        inargs:,
-        reporters:,
-        timeout:,
-        status: Status.new(output_paths),
-        &
-      )
+      status
     end
 
     # Transcodes the media file using the preset configurations
