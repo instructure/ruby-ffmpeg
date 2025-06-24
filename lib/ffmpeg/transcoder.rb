@@ -27,9 +27,29 @@ module FFMPEG
     class Status < FFMPEG::Status
       attr_reader :paths
 
-      def initialize(paths)
+      def initialize(paths, checks: %i[exist?])
         @paths = paths
+        @checks = checks
         super()
+      end
+
+      # Returns true if the transcoding process was successful.
+      # It returns true if the process exited with a zero exit status
+      # and all checks passed.
+      #
+      # @return [Boolean] True if the transcoding process was successful, false otherwise.
+      def success?
+        return false unless super
+
+        @checks.all? do |check|
+          if check.is_a?(Symbol) && respond_to?(check)
+            send(check)
+          elsif check.respond_to?(:call)
+            check.call(self)
+          else
+            raise ArgumentError, "Unknown check format #{check.class}, expected #{Symbol} or #{Proc}"
+          end
+        end
       end
 
       # Returns the media files associated with the transcoding process.
@@ -43,15 +63,23 @@ module FFMPEG
           Media.new(path, *ffprobe_args, load: load, autoload: autoload)
         end
       end
+
+      # Returns true if all output paths exist.
+      #
+      # @return [Boolean] True if all output paths exist, false otherwise.
+      def exist?
+        @paths.all? { |path| File.exist?(path) }
+      end
     end
 
-    attr_reader :name, :metadata, :presets, :reporters, :timeout
+    attr_reader :name, :metadata, :presets, :reporters, :checks, :retries, :timeout
 
     def initialize(
       name: nil,
       metadata: nil,
       presets: [],
       reporters: nil,
+      checks: %i[exist?],
       retries: nil,
       timeout: nil,
       &compose_inargs
@@ -60,8 +88,9 @@ module FFMPEG
       @metadata = metadata
       @presets = presets
       @reporters = reporters
-      @timeout = timeout
+      @checks = checks
       @retries = retries&.abs || 0
+      @timeout = timeout
       @compose_inargs = compose_inargs
     end
 
@@ -102,7 +131,7 @@ module FFMPEG
           inargs:,
           reporters:,
           timeout:,
-          status: Status.new(output_paths),
+          status: Status.new(output_paths, checks:),
           &
         )
 
