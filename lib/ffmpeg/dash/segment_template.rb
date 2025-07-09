@@ -63,6 +63,17 @@ module FFMPEG
         end
       end
 
+      # Returns the segment ranges of the segment timeline.
+      #
+      # @return [Enumerator::Lazy<Range>, nil] An enumerable of ranges representing the segments.
+      def to_ranges
+        return unless segment_timeline
+
+        segment_timeline&.to_ranges&.map do |range|
+          (range.first / timescale).round(5)..(range.last / timescale).round(5)
+        end
+      end
+
       private
 
       def respond_to_missing?(name, include_private = false)

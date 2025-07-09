@@ -80,13 +80,6 @@ module FFMPEG
         @base_url ||= @node.at_xpath('./xmlns:BaseURL')&.content
       end
 
-      # Returns the segment timeline associated with the representation.
-      #
-      # @return [SegmentTimeline, nil] The SegmentTimeline object.
-      def segment_timeline
-        @segment_timeline ||= @node&.at_xpath('./xmlns:SegmentTimeline').then(&SegmentTimeline.method(:new))
-      end
-
       # Sets the base URL for the representation.
       #
       # @param value [String] The base URL to set.
@@ -111,6 +104,13 @@ module FFMPEG
       # @return [void]
       def segment_query=(value)
         segment_template&.segment_query = value
+      end
+
+      # Returns the segment ranges of the representation as an enumerable of ranges.
+      #
+      # @return [Enumerable::Lazy<Range>, nil] An enumerable of ranges representing the segments.
+      def to_ranges
+        segment_template&.to_ranges
       end
 
       private
