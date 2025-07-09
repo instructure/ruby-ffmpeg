@@ -53,4 +53,16 @@ RSpec.describe FFMPEG::DASH::SegmentTemplate do
       expect(video_segment_template.media).to include('foo=bar')
     end
   end
+
+  describe '#to_ranges' do
+    it 'returns the segment ranges' do
+      expect(video_segment_template.to_ranges.to_a).to eq(
+        [0.0..3.0, 3.0..6.0, 9.0..10.1]
+      )
+
+      expect(audio_segment_template.to_ranges.to_a).to eq(
+        [0.0..2.98958, 2.98958..5.98958, 5.98958..8.98958, 8.98958..10.1]
+      )
+    end
+  end
 end
