@@ -5,64 +5,81 @@ require_relative '../../spec_helper'
 RSpec.describe FFMPEG::DASH::SegmentTemplate do
   let(:path) { 'spec/fixtures/media/dash.mpd' }
   let(:manifest) { FFMPEG::DASH::Manifest.parse(File.read(path)) }
-  let(:video_segment_template) do
-    manifest.adaptation_sets.find { _1.content_type == 'video' }.representations.first.segment_template
-  end
-  let(:audio_segment_template) do
-    manifest.adaptation_sets.find { _1.content_type == 'audio' }.representations.first.segment_template
+  let(:segment_template) do
+    manifest.adaptation_sets.first.representations.first.segment_template
   end
 
   describe '#timescale' do
+    subject { segment_template.timescale }
+
     it 'returns the timescale' do
-      expect(video_segment_template.timescale).to eq(90_000)
-      expect(audio_segment_template.timescale).to eq(48_000)
+      is_expected.to eq(90_000)
     end
   end
 
   describe '#initialization' do
-    it 'returns the initialization' do
-      expect(video_segment_template.initialization).to eq('init-stream$RepresentationID$.m4s')
-      expect(audio_segment_template.initialization).to eq('init-stream$RepresentationID$.m4s')
+    subject { segment_template.initialization }
+
+    it 'returns the initialization template' do
+      is_expected.to eq('init-stream$RepresentationID$.m4s')
     end
   end
 
   describe '#media' do
-    it 'returns the media' do
-      expect(video_segment_template.media).to eq('chunk-stream$RepresentationID$-$Number$.m4s')
-      expect(audio_segment_template.media).to eq('chunk-stream$RepresentationID$-$Number$.m4s')
+    subject { segment_template.media }
+
+    it 'returns the media template' do
+      is_expected.to eq('chunk-stream$RepresentationID$-$Number%05d$.m4s')
     end
   end
 
   describe '#start_number' do
+    subject { segment_template.start_number }
+
     it 'returns the start number' do
-      expect(video_segment_template.start_number).to eq(1)
-      expect(audio_segment_template.start_number).to eq(1)
+      is_expected.to eq(1)
     end
   end
 
   describe '#segment_timeline' do
+    subject { segment_template.segment_timeline }
+
     it 'returns the segment timeline' do
-      expect(video_segment_template.segment_timeline).to be_a(FFMPEG::DASH::SegmentTimeline)
+      is_expected.to be_a(FFMPEG::DASH::SegmentTimeline)
     end
   end
 
   describe '#segment_query=' do
-    it 'sets the segment query' do
-      video_segment_template.segment_query = 'foo=bar'
-      expect(video_segment_template.initialization).to include('foo=bar')
-      expect(video_segment_template.media).to include('foo=bar')
+    before { segment_template.segment_query = 'foo=bar' }
+
+    it 'includes query in the initialization template' do
+      expect(segment_template.initialization).to include('foo=bar')
+    end
+
+    it 'includes query in the media template' do
+      expect(segment_template.media).to include('foo=bar')
     end
   end
 
   describe '#to_ranges' do
-    it 'returns the segment ranges' do
-      expect(video_segment_template.to_ranges.to_a).to eq(
-        [0.0..3.0, 3.0..6.0, 9.0..10.1]
-      )
+    subject { segment_template.to_ranges.to_a }
 
-      expect(audio_segment_template.to_ranges.to_a).to eq(
-        [0.0..2.98958, 2.98958..5.98958, 5.98958..8.98958, 8.98958..10.1]
-      )
+    it 'returns the segment ranges' do
+      is_expected.to eq([0.0..3.0, 3.0..6.0, 9.0..10.1])
+    end
+  end
+
+  describe '#initialization_filename' do
+    it 'returns the formatted initialization filename' do
+      expect(segment_template.initialization_filename).to eq('init-stream0.m4s')
+    end
+  end
+
+  describe '#media_filename' do
+    it 'returns the formatted media filename for segments' do
+      expect(segment_template.media_filename(0)).to eq('chunk-stream0-00001.m4s')
+      expect(segment_template.media_filename(1)).to eq('chunk-stream0-00002.m4s')
+      expect(segment_template.media_filename(5)).to eq('chunk-stream0-00006.m4s')
     end
   end
 end

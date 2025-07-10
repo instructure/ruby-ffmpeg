@@ -4,29 +4,26 @@ module FFMPEG
   module DASH
     # Represents a Segment Template in a DASH manifest.
     class SegmentTimeline
-      def initialize(node)
-        @node = node
-      end
+      attr_reader :manifest, :segment_template
 
-      # Returns the timescale of the segment timeline.
-      #
-      # @return [Integer, nil] The timescale as an integer.
-      def timescale
-        @timescale ||= @node['timescale']&.to_i || 1
+      def initialize(segment_template, node)
+        @manifest = segment_template.manifest
+        @segment_template = segment_template
+        @node = node
       end
 
       # Returns the segment ranges of the timeline as an enumerable of ranges.
       #
       # @return [Enumerable::Lazy<Range>] An enumerable of ranges representing the segments.
       def to_ranges
-        time = nil
+        time = 0
         @node.xpath('./xmlns:S').lazy.flat_map do |segment|
-          time = segment['t']&.to_f || time
-          duration = segment['d'].to_f
-          repeat = segment['r']&.to_i || 1
+          time = segment['t']&.to_i || time
+          duration = segment['d'].to_i
+          repeat = segment['r'].to_i
 
-          repeat.times.map do
-            ((time / timescale).round(5)..((time + duration) / timescale).round(5)).tap do
+          (repeat + 1).times.map do
+            (time..(time + duration)).tap do
               time += duration
             end
           end
