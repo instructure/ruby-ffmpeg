@@ -3,17 +3,17 @@
   <Period>
     <AdaptationSet id="0" par="16:9" contentType="video" maxWidth="1920" maxHeight="1080" frameRate="30/1">
       <Representation id="0" mimeType="video/mp4" codecs="avc1.640028" bandwidth="2500000" sar="1:1" width="1920" height="1080">
-        <SegmentTemplate timescale="90000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number$.m4s" startNumber="1">
+        <SegmentTemplate timescale="90000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="1">
           <SegmentTimeline>
-            <S t="0" d="270000" r="2"/>
+            <S t="0" d="270000" r="1"/>
             <S t="810000" d="99000"/>
           </SegmentTimeline>
         </SegmentTemplate>
       </Representation>
       <Representation id="1" mimeType="video/mp4" codecs="avc1.640028" bandwidth="1250000" sar="1:1" width="1280" height="720">
-        <SegmentTemplate timescale="90000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number$.m4s" startNumber="1">
+        <SegmentTemplate timescale="90000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="1">
           <SegmentTimeline>
-            <S t="0" d="270000" r="3"/>
+            <S t="0" d="270000" r="2"/>
             <S d="99000"/>
           </SegmentTimeline>
         </SegmentTemplate>
@@ -21,10 +21,10 @@
     </AdaptationSet>
     <AdaptationSet id="1" contentType="audio">
       <Representation id="2" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000">
-        <SegmentTemplate timescale="48000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number$.m4s" startNumber="1">
+        <SegmentTemplate timescale="48000" initialization="init-stream$RepresentationID$.m4s" media="chunk-stream$RepresentationID$-$Number%05d$.m4s" startNumber="1">
           <SegmentTimeline>
-            <S t="0" d="143500" r="1"/>
-            <S d="144000" r="2"/>
+            <S t="0" d="143500"/>
+            <S d="144000" r="1"/>
             <S d="53300"/>
           </SegmentTimeline>
         </SegmentTemplate>
