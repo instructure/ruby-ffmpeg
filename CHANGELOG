@@ -1,3 +1,10 @@
+== 8.1.0-beta 2025-07-15
+
+Improvements:
+* Added comprehensive MPEG-DASH manifest parsing capabilities with the new `FFMPEG::DASH` module.
+* Added support for converting MPEG-DASH manifests to HLS (M3U8) playlists.
+* Added support for configurable base URLs and segment queries in DASH manifests.
+
 == 8.0.0 2025-06-27
 
 Improvements:
