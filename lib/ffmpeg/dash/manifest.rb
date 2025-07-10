@@ -30,11 +30,22 @@ module FFMPEG
         @type ||= @mpd&.[]('type')
       end
 
+      # Returns true if the MPD is a VOD (Video on Demand) manifest.
+      #
+      # @return [Boolean] True if the MPD is a VOD manifest, false otherwise.
+      def vod?
+        type != 'dynamic'
+      end
+
       # Returns the adaptation sets in the MPD.
       #
-      # @return [Array<AdaptationSet>, nil] An array of AdaptationSet objects.
+      # @return [Array<AdaptationSet>] An array of AdaptationSet objects.
       def adaptation_sets
-        @adaptation_sets ||= @mpd&.xpath('./xmlns:Period[1]/xmlns:AdaptationSet')&.map(&AdaptationSet.method(:new))
+        @adaptation_sets ||=
+          @mpd
+          &.xpath('./xmlns:Period[1]/xmlns:AdaptationSet')
+          &.map { AdaptationSet.new(self, _1) }
+          .then { _1 || [] }
       end
 
       # Sets the base URL for all adaptation sets.
@@ -42,7 +53,7 @@ module FFMPEG
       # @param value [String] The base URL to set.
       # @return [void]
       def base_url=(value)
-        adaptation_sets&.each { _1.base_url = value }
+        adaptation_sets.each { _1.base_url = value }
       end
 
       # Sets the segment query for all adaptation sets.
@@ -50,14 +61,49 @@ module FFMPEG
       # @param value [String] The segment query to set.
       # @return [void]
       def segment_query=(value)
-        adaptation_sets&.each { _1.segment_query = value }
+        adaptation_sets.each { _1.segment_query = value }
       end
 
       # Returns the MPD as a string in XML format.
       #
       # @return [String] The MPD document as a formatted XML string.
-      def to_s
+      def to_xml
         @document.to_xml(indent: 2, encoding: 'UTF-8')
+      end
+
+      # Returns the MPD as a string in M3U8 (HLS playlist) format.
+      # NOTE: Currently only audio and video representations are supported.
+      # Additionally only the first adaptation set of each type is included.
+      #
+      # See https://datatracker.ietf.org/doc/html/rfc8216
+      #
+      # @return [String] The MPD document as a formatted M3U8 string.
+      def to_m3u8
+        m3u8 = %w[#EXTM3U #EXT-X-VERSION:6]
+
+        adaptation_sets =
+          self
+          .adaptation_sets
+          .select(&:representations)
+          .select { %w[audio video].include?(_1.content_type) }
+          .uniq(&:content_type)
+          .sort_by(&:content_type)
+
+        # Add the EXT-X-MEDIA tag for the audio adaptation set only if there
+        # are both audio and video adaptation sets present.
+        if adaptation_sets.size.to_i > 1
+          m3u8 <<
+            adaptation_sets
+            .first
+            .to_m3u8mt(group_id: 'audio')
+        end
+
+        # Add the EXT-X-STREAM-INF tag for each audio or video representation.
+        adaptation_sets.last&.representations&.each do |representation|
+          m3u8 << representation.to_m3u8si(audio_group_id: adaptation_sets.size > 1 ? 'audio' : nil)
+        end
+
+        m3u8.compact.join("\n")
       end
 
       private

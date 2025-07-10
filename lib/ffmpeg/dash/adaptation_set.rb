@@ -1,12 +1,18 @@
 # frozen_string_literal: true
 
+require_relative 'hls_class_methods'
 require_relative 'representation'
 
 module FFMPEG
   module DASH
     # Represents an Adaptation Set in a DASH manifest.
     class AdaptationSet
-      def initialize(node)
+      include HLSClassMethods
+
+      attr_reader :manifest
+
+      def initialize(manifest, node)
+        @manifest = manifest
         @node = node
       end
 
@@ -22,6 +28,13 @@ module FFMPEG
       # @return [String, nil] The pixel aspect ratio.
       def par
         @par ||= @node['par']
+      end
+
+      # Returns the language of the adaptation set.
+      #
+      # @return [String, nil] The language code (e.g., 'und', 'en', 'fr').
+      def lang
+        @lang ||= @node['lang']
       end
 
       # Returns the content type of the adaptation set.
@@ -54,9 +67,12 @@ module FFMPEG
 
       # Returns the representations in the adaptation set.
       #
-      # @return [Array<Representation>, nil] An array of Representation objects.
+      # @return [Array<Representation>] An array of Representation objects.
       def representations
-        @representations ||= @node.xpath('./xmlns:Representation')&.map(&Representation.method(:new))
+        @representations ||=
+          @node
+          .xpath('./xmlns:Representation')
+          .map { Representation.new(self, _1) }
       end
 
       # Sets the base URL for all representations in the adaptation set.
@@ -64,7 +80,7 @@ module FFMPEG
       # @param value [String] The base URL to set.
       # @return [void]
       def base_url=(value)
-        representations&.each { _1.base_url = value }
+        representations.each { _1.base_url = value }
       end
 
       # Sets the segment query for all representations in the adaptation set.
@@ -72,7 +88,32 @@ module FFMPEG
       # @param value [String] The segment query to set.
       # @return [void]
       def segment_query=(value)
-        representations&.each { _1.segment_query = value }
+        representations.each { _1.segment_query = value }
+      end
+
+      # Returns the representation as a string in M3U8 (HLS playlist) media track format.
+      # NOTE: Currently we only support audio and video representations.
+      #
+      # See https://datatracker.ietf.org/doc/html/rfc8216
+      #
+      # @param default [Boolean] Whether to mark media track as default or not.
+      # @param autoselect [Boolean] Whether to mark media track as automatically selected or not.
+      # @param group_id [String, nil] The group ID for media track.
+      # @return [String, nil] The M3U8 EXT-X-MEDIA formatted string for the representation.
+      def to_m3u8mt(group_id: content_type, default: true, autoselect: true)
+        return unless %w[audio video].include?(content_type)
+        return unless representations.any?
+
+        m3u8t(
+          'EXT-X-MEDIA',
+          'TYPE' => content_type.upcase,
+          'GROUP-ID' => group_id,
+          'NAME' => quote(lang || 'und'),
+          'LANGUAGE' => quote(lang || 'und'),
+          'DEFAULT' => default ? 'YES' : 'NO',
+          'AUTOSELECT' => autoselect ? 'YES' : 'NO',
+          'URI' => quote("stream#{representations.first.id}.m3u8")
+        )
       end
 
       private

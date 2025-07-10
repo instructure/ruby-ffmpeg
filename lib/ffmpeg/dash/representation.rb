@@ -1,12 +1,20 @@
 # frozen_string_literal: true
 
+require 'uri'
+require_relative 'hls_class_methods'
 require_relative 'segment_template'
 
 module FFMPEG
   module DASH
     # Represents a Representation in a DASH manifest.
     class Representation
-      def initialize(node)
+      include HLSClassMethods
+
+      attr_reader :manifest, :adaptation_set
+
+      def initialize(adaptation_set, node)
+        @manifest = adaptation_set.manifest
+        @adaptation_set = adaptation_set
         @node = node
       end
 
@@ -70,7 +78,10 @@ module FFMPEG
       #
       # @return [SegmentTemplate, nil] The SegmentTemplate object.
       def segment_template
-        @segment_template ||= @node.at_xpath('./xmlns:SegmentTemplate')&.then(&SegmentTemplate.method(:new))
+        @segment_template ||=
+          @node
+          .at_xpath('./xmlns:SegmentTemplate')
+          &.then { SegmentTemplate.new(self, _1) }
       end
 
       # Returns the base URL of the representation.
@@ -113,7 +124,72 @@ module FFMPEG
         segment_template&.to_ranges
       end
 
+      # Returns the representation as a string in M3U8 (HLS playlist) format.
+      # NOTE: Currently we only support audio and video representations.
+      #
+      # See https://datatracker.ietf.org/doc/html/rfc8216
+      #
+      # @return [String, nil] The M3U8 formatted string for the representation.
+      def to_m3u8
+        return unless %w[audio video].include?(@adaptation_set.content_type)
+        return unless segment_template
+
+        m3u8 = %w[#EXTM3U #EXT-X-VERSION:6]
+        m3u8 << m3u8t('EXT-X-PLAYLIST-TYPE', %w[VOD]) if @manifest.vod?
+        m3u8 << m3u8t(
+          'EXT-X-MAP',
+          'URI' => quote(url(segment_template.initialization_filename))
+        )
+
+        target_duration = 0
+        to_ranges.each_with_index do |range, index|
+          filename = segment_template.media_filename(index)
+          duration = (range.end - range.begin).round(5)
+          target_duration = [duration, target_duration].max
+
+          m3u8 << m3u8t('EXTINF', [duration, ''])
+          m3u8 << url(filename)
+        end
+
+        [
+          m3u8[0..1],
+          m3u8t('EXT-X-TARGETDURATION', [target_duration.ceil]),
+          m3u8[2..],
+          @manifest.vod? ? '#EXT-X-ENDLIST' : nil
+        ].compact.join("\n")
+      end
+
+      # Returns the representation as a string in M3U8 (HLS playlist) stream info format.
+      # NOTE: Currently we only support audio and video representations.
+      #
+      # See https://datatracker.ietf.org/doc/html/rfc8216
+      #
+      # @param audio_group_id [String, nil] The audio group ID to include in the stream info.
+      # @return [String, nil] The M3U8 formatted string for the representation as a stream.
+      def to_m3u8si(audio_group_id: nil, video_group_id: nil)
+        return unless %w[audio video].include?(@adaptation_set.content_type)
+
+        "#{m3u8t(
+          'EXT-X-STREAM-INF',
+          'BANDWIDTH' => bandwidth,
+          'CODECS' => quote(codecs),
+          'RESOLUTION' => resolution,
+          'AUDIO' => quote(audio_group_id),
+          'VIDEO' => quote(video_group_id)
+        )}\n#{"stream#{id}.m3u8"}"
+      end
+
       private
+
+      def vod?
+        @adaptation_set.manifest.vod?
+      end
+
+      def url(filename)
+        return filename unless base_url
+
+        URI.join(base_url, filename).to_s
+      end
 
       def respond_to_missing?(name, include_private = false)
         @node.respond_to?(name, include_private) || super

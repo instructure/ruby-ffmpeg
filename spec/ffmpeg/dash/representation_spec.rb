@@ -37,20 +37,26 @@ RSpec.describe FFMPEG::DASH::Representation do
   end
 
   describe '#sar' do
+    subject { video_representation.sar }
+
     it 'returns the sar' do
-      expect(video_representation.sar).to eq('1:1')
+      is_expected.to eq('1:1')
     end
   end
 
   describe '#width' do
+    subject { video_representation.width }
+
     it 'returns the width' do
-      expect(video_representation.width).to eq(1920)
+      is_expected.to eq(1920)
     end
   end
 
   describe '#height' do
+    subject { video_representation.height }
+
     it 'returns the height' do
-      expect(video_representation.height).to eq(1080)
+      is_expected.to eq(1080)
     end
   end
 
@@ -62,8 +68,10 @@ RSpec.describe FFMPEG::DASH::Representation do
   end
 
   describe '#segment_template' do
+    subject { video_representation.segment_template }
+
     it 'returns the segment template' do
-      expect(video_representation.segment_template).to be_a(FFMPEG::DASH::SegmentTemplate)
+      is_expected.to be_a(FFMPEG::DASH::SegmentTemplate)
     end
   end
 
@@ -101,6 +109,208 @@ RSpec.describe FFMPEG::DASH::Representation do
       expect(audio_representation.to_ranges.to_a).to eq(
         [0.0..2.98958, 2.98958..5.98958, 5.98958..8.98958, 8.98958..10.1]
       )
+    end
+  end
+
+  describe '#to_m3u8' do
+    subject { representation.to_m3u8 }
+
+    context 'with video representation' do
+      let(:representation) { video_representation }
+
+      it 'returns M3U8 playlist for video representation' do
+        is_expected.to eq(<<~M3U8.strip)
+          #EXTM3U
+          #EXT-X-VERSION:6
+          #EXT-X-TARGETDURATION:3
+          #EXT-X-PLAYLIST-TYPE:VOD
+          #EXT-X-MAP:URI="init-stream0.m4s"
+          #EXTINF:3.0,
+          chunk-stream0-00001.m4s
+          #EXTINF:3.0,
+          chunk-stream0-00002.m4s
+          #EXTINF:1.1,
+          chunk-stream0-00003.m4s
+          #EXT-X-ENDLIST
+        M3U8
+      end
+    end
+
+    context 'with audio representation' do
+      let(:representation) { audio_representation }
+
+      it 'returns M3U8 playlist for audio representation' do
+        is_expected.to eq(<<~M3U8.strip)
+          #EXTM3U
+          #EXT-X-VERSION:6
+          #EXT-X-TARGETDURATION:3
+          #EXT-X-PLAYLIST-TYPE:VOD
+          #EXT-X-MAP:URI="init-stream2.m4s"
+          #EXTINF:2.98958,
+          chunk-stream2-00001.m4s
+          #EXTINF:3.0,
+          chunk-stream2-00002.m4s
+          #EXTINF:3.0,
+          chunk-stream2-00003.m4s
+          #EXTINF:1.11042,
+          chunk-stream2-00004.m4s
+          #EXT-X-ENDLIST
+        M3U8
+      end
+    end
+
+    context 'with base URL set' do
+      let(:representation) { video_representation }
+
+      before { representation.base_url = 'http://example.com/dash/' }
+
+      it 'includes base URL in segment URLs' do
+        expect(subject).to include('URI="http://example.com/dash/init-stream0.m4s"')
+        expect(subject).to include('http://example.com/dash/chunk-stream0-00001.m4s')
+      end
+    end
+
+    context 'with dynamic manifest' do
+      let(:mpd) do
+        <<~XML
+          <?xml version="1.0" encoding="UTF-8"?>
+          <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="dynamic">
+            <Period>
+              <AdaptationSet id="0" contentType="video">
+                <Representation id="0" mimeType="video/mp4" codecs="avc1.640028" bandwidth="2500000" width="1920" height="1080">
+                  <SegmentTemplate timescale="90000" initialization="init.m4s" media="chunk$Number$.m4s">
+                    <SegmentTimeline>
+                      <S t="0" d="270000"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                </Representation>
+              </AdaptationSet>
+            </Period>
+          </MPD>
+        XML
+      end
+      let(:manifest) { FFMPEG::DASH::Manifest.parse(mpd) }
+      let(:representation) { manifest.adaptation_sets.first.representations.first }
+
+      it 'excludes VOD-specific tags' do
+        expect(subject).not_to include('#EXT-X-PLAYLIST-TYPE:VOD')
+        expect(subject).not_to include('#EXT-X-ENDLIST')
+      end
+    end
+
+    context 'with unsupported content types' do
+      let(:mpd) do
+        <<~XML
+          <?xml version="1.0" encoding="UTF-8"?>
+          <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static">
+            <Period>
+              <AdaptationSet id="0" contentType="subtitle">
+                <Representation id="0" mimeType="text/vtt" bandwidth="1000">
+                  <SegmentTemplate initialization="init.m4s" media="chunk.m4s">
+                    <SegmentTimeline>
+                      <S t="0" d="143500"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                </Representation>
+              </AdaptationSet>
+            </Period>
+          </MPD>
+        XML
+      end
+      let(:manifest) { FFMPEG::DASH::Manifest.parse(mpd) }
+      let(:representation) { manifest.adaptation_sets.first.representations.first }
+
+      it 'returns nil' do
+        is_expected.to be_nil
+      end
+    end
+
+    context 'when no segment template is present' do
+      let(:mpd) do
+        <<~XML
+          <?xml version="1.0" encoding="UTF-8"?>
+          <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static">
+            <Period>
+              <AdaptationSet id="0" contentType="video">
+                <Representation id="0" mimeType="video/mp4" codecs="avc1.640028" bandwidth="2500000" width="1920" height="1080">
+                </Representation>
+              </AdaptationSet>
+            </Period>
+          </MPD>
+        XML
+      end
+      let(:manifest) { FFMPEG::DASH::Manifest.parse(mpd) }
+      let(:representation) { manifest.adaptation_sets.first.representations.first }
+
+      it 'returns nil' do
+        is_expected.to be_nil
+      end
+    end
+  end
+
+  describe '#to_m3u8si' do
+    subject { representation.to_m3u8si(audio_group_id: audio_group_id, video_group_id: video_group_id) }
+
+    let(:audio_group_id) { nil }
+    let(:video_group_id) { nil }
+
+    context 'with video representation' do
+      let(:representation) { video_representation }
+      let(:audio_group_id) { 'audio' }
+
+      it 'returns an HLS EXT-X-STREAM-INF tag' do
+        is_expected.to eq(<<~M3U8.strip)
+          #EXT-X-STREAM-INF:BANDWIDTH=2500000,CODECS="avc1.640028",RESOLUTION=1920x1080,AUDIO="audio"
+          stream0.m3u8
+        M3U8
+      end
+    end
+
+    context 'with audio representation' do
+      let(:representation) { audio_representation }
+
+      it 'returns an HLS EXT-X-STREAM-INF tag without resolution' do
+        is_expected.to eq(<<~M3U8.strip)
+          #EXT-X-STREAM-INF:BANDWIDTH=128000,CODECS="mp4a.40.2"
+          stream2.m3u8
+        M3U8
+      end
+    end
+
+    context 'with video group ID parameter' do
+      let(:representation) { video_representation }
+      let(:video_group_id) { 'video' }
+
+      it 'includes video group ID' do
+        expect(subject).to include('VIDEO="video"')
+      end
+    end
+
+    context 'with unsupported content types' do
+      let(:mpd) do
+        <<~XML
+          <?xml version="1.0" encoding="UTF-8"?>
+          <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static">
+            <Period>
+              <AdaptationSet id="0" contentType="subtitle">
+                <Representation id="0" mimeType="text/vtt" bandwidth="1000">
+                  <SegmentTemplate initialization="init.m4s" media="chunk.m4s">
+                    <SegmentTimeline>
+                      <S t="0" d="143500"/>
+                    </SegmentTimeline>
+                  </SegmentTemplate>
+                </Representation>
+              </AdaptationSet>
+            </Period>
+          </MPD>
+        XML
+      end
+      let(:manifest) { FFMPEG::DASH::Manifest.parse(mpd) }
+      let(:representation) { manifest.adaptation_sets.first.representations.first }
+
+      it 'returns nil' do
+        is_expected.to be_nil
+      end
     end
   end
 end
