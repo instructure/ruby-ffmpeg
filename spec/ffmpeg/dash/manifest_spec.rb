@@ -86,7 +86,7 @@ RSpec.describe FFMPEG::DASH::Manifest do
         is_expected.to eq(<<~M3U8.strip)
           #EXTM3U
           #EXT-X-VERSION:6
-          #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=audio,NAME="und",LANGUAGE="und",DEFAULT=YES,AUTOSELECT=YES,URI="stream2.m3u8"
+          #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="und",LANGUAGE="und",DEFAULT=YES,AUTOSELECT=YES,URI="stream2.m3u8"
           #EXT-X-STREAM-INF:BANDWIDTH=2500000,CODECS="avc1.640028",RESOLUTION=1920x1080,AUDIO="audio"
           stream0.m3u8
           #EXT-X-STREAM-INF:BANDWIDTH=1250000,CODECS="avc1.640028",RESOLUTION=1280x720,AUDIO="audio"
