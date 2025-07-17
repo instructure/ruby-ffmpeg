@@ -107,7 +107,7 @@ module FFMPEG
         m3u8t(
           'EXT-X-MEDIA',
           'TYPE' => content_type.upcase,
-          'GROUP-ID' => group_id,
+          'GROUP-ID' => quote(group_id),
           'NAME' => quote(lang || 'und'),
           'LANGUAGE' => quote(lang || 'und'),
           'DEFAULT' => default ? 'YES' : 'NO',

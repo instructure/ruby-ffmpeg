@@ -133,7 +133,7 @@ RSpec.describe FFMPEG::DASH::AdaptationSet do
       it 'returns an EXT-X-MEDIA tag' do
         is_expected.to eq(
           '#EXT-X-MEDIA:TYPE=AUDIO,' \
-          'GROUP-ID=audio,NAME="und",LANGUAGE="und",DEFAULT=YES,AUTOSELECT=YES,URI="stream2.m3u8"'
+          'GROUP-ID="audio",NAME="und",LANGUAGE="und",DEFAULT=YES,AUTOSELECT=YES,URI="stream2.m3u8"'
         )
       end
     end
@@ -147,7 +147,7 @@ RSpec.describe FFMPEG::DASH::AdaptationSet do
       it 'returns an EXT-X-MEDIA tag' do
         is_expected.to eq(
           '#EXT-X-MEDIA:TYPE=VIDEO,' \
-          'GROUP-ID=video,NAME="und",LANGUAGE="und",DEFAULT=NO,AUTOSELECT=NO,URI="stream0.m3u8"'
+          'GROUP-ID="video",NAME="und",LANGUAGE="und",DEFAULT=NO,AUTOSELECT=NO,URI="stream0.m3u8"'
         )
       end
     end
@@ -177,7 +177,7 @@ RSpec.describe FFMPEG::DASH::AdaptationSet do
       it 'uses the specified language' do
         is_expected.to eq(
           '#EXT-X-MEDIA:TYPE=AUDIO,' \
-          'GROUP-ID=audio,NAME="en",LANGUAGE="en",DEFAULT=YES,AUTOSELECT=YES,URI="stream0.m3u8"'
+          'GROUP-ID="audio",NAME="en",LANGUAGE="en",DEFAULT=YES,AUTOSELECT=YES,URI="stream0.m3u8"'
         )
       end
     end
