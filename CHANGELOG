@@ -1,3 +1,8 @@
+== 8.1.0-beta.1 2025-07-17
+
+Fixes:
+* Correctly implement HLS specification for EXT-X-MEDIA and GROUP-ID.
+
 == 8.1.0-beta 2025-07-15
 
 Improvements:
