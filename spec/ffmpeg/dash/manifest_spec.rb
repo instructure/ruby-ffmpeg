@@ -176,5 +176,14 @@ RSpec.describe FFMPEG::DASH::Manifest do
         M3U8
       end
     end
+
+    context 'with base URL set' do
+      it 'includes the base URL in the playlist URIs' do
+        manifest.base_url = 'http://example.com/'
+        is_expected.to include('http://example.com/stream0.m3u8')
+        is_expected.to include('http://example.com/stream1.m3u8')
+        is_expected.to include('http://example.com/stream2.m3u8')
+      end
+    end
   end
 end

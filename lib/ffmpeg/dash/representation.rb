@@ -169,6 +169,9 @@ module FFMPEG
       def to_m3u8si(audio_group_id: nil, video_group_id: nil)
         return unless %w[audio video].include?(@adaptation_set.content_type)
 
+        url = "stream#{id}.m3u8"
+        url = URI.join(base_url, url).to_s if base_url
+
         "#{m3u8t(
           'EXT-X-STREAM-INF',
           'BANDWIDTH' => bandwidth,
@@ -176,7 +179,7 @@ module FFMPEG
           'RESOLUTION' => resolution,
           'AUDIO' => quote(audio_group_id),
           'VIDEO' => quote(video_group_id)
-        )}\n#{"stream#{id}.m3u8"}"
+        )}\n#{url}"
       end
 
       private
