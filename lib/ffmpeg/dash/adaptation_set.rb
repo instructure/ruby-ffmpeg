@@ -104,6 +104,9 @@ module FFMPEG
         return unless %w[audio video].include?(content_type)
         return unless representations.any?
 
+        url = "stream#{representations.first.id}.m3u8"
+        url = URI.join(representations.first.base_url, url).to_s if representations.first.base_url
+
         m3u8t(
           'EXT-X-MEDIA',
           'TYPE' => content_type.upcase,
@@ -112,7 +115,7 @@ module FFMPEG
           'LANGUAGE' => quote(lang || 'und'),
           'DEFAULT' => default ? 'YES' : 'NO',
           'AUTOSELECT' => autoselect ? 'YES' : 'NO',
-          'URI' => quote("stream#{representations.first.id}.m3u8")
+          'URI' => quote(url)
         )
       end
 
