@@ -195,8 +195,8 @@ module FFMPEG
     # @return [Boolean]
     autoload def hdr?
       default_video_stream&.color_primaries == 'bt2020' &&
-      default_video_stream&.color_space == 'bt2020nc' &&
-      %w[smpte2084 arib-std-b67].include?(default_video_stream&.color_transfer)
+        default_video_stream&.color_space == 'bt2020nc' &&
+        %w[smpte2084 arib-std-b67].include?(default_video_stream&.color_transfer)
     end
 
     # Whether the media is rotated (based on the default video stream).
