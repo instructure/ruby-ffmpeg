@@ -130,8 +130,10 @@ module FFMPEG
 
     def min_bit_rate(*values)
       bit_rate =
-        values.compact.map do |value|
-          next value if value.is_a?(Integer)
+        values.filter_map do |value|
+          # Some muxers (webm) might not expose birate under certain conditions
+          next false if value.nil?
+          next (value.positive? ? value : false) if value.is_a?(Integer)
 
           unless value.is_a?(String)
             raise ArgumentError,

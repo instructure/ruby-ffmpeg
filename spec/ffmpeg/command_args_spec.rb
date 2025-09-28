@@ -96,6 +96,14 @@ module FFMPEG
           expect(args.to_a).to eq(%w[])
         end
       end
+
+      context 'when the reported media bitrate is 0' do
+        it 'returns the requested bitrate' do
+          media = instance_double(Media, video_bit_rate: 0)
+          args = CommandArgs.compose(media) { min_video_bit_rate '2M' }
+          expect(args.to_a).to eq(%w[-minrate 2000k])
+        end
+      end
     end
 
     describe '#max_video_bit_rate' do
