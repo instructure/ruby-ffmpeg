@@ -1,6 +1,11 @@
-== 8.1.0-beta.2 2025-07-17
+== 8.1.0-beta.3 2025-09-30
 
-Fixes:
+Improvements:
+* Handle bit rates reported as `0` in `FFMPEG::CommandArgs` by @elthariel.
+
+== 8.1.0-beta.2 2025-09-25
+
+Improvements:
 * Added support for base URLs in HLS playlists generated via the `FFMPEG::DASH` classes.
 
 == 8.1.0-beta.1 2025-07-17
