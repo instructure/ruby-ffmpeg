@@ -14,6 +14,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'ultrafast',
         video_profile: 'baseline',
         frame_rate: 30,
@@ -27,6 +28,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -44,6 +46,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'ultrafast',
         video_profile: 'baseline',
         frame_rate: 30,
@@ -57,6 +60,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -74,6 +78,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'ultrafast',
         video_profile: 'baseline',
         frame_rate: 30,
@@ -87,6 +92,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -104,6 +110,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'main',
         frame_rate: 30,
@@ -117,6 +124,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -134,6 +142,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'high',
         frame_rate: 60,
@@ -147,6 +156,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -164,6 +174,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'high',
         frame_rate: 60,
@@ -177,6 +188,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -194,6 +206,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'high',
         frame_rate: 60,
@@ -207,6 +220,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -224,6 +238,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'high',
         frame_rate: 60,
@@ -237,6 +252,7 @@ module FFMPEG
           metadata:,
           threads:,
           audio_bit_rate:,
+          audio_sample_rate:,
           video_preset:,
           video_profile:,
           frame_rate:,
@@ -251,7 +267,7 @@ module FFMPEG
 
     # Preset to encode H.264 video files.
     class H264 < Preset
-      attr_reader :threads, :audio_bit_rate, :video_preset, :video_profile,
+      attr_reader :threads, :audio_bit_rate, :audio_sample_rate, :video_preset, :video_profile,
                   :frame_rate, :constant_rate_factor, :pixel_format,
                   :max_width, :max_height
 
@@ -273,6 +289,7 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         video_preset: 'fast',
         video_profile: 'high',
         frame_rate: 30,
@@ -292,6 +309,7 @@ module FFMPEG
 
         @threads = threads
         @audio_bit_rate = audio_bit_rate
+        @audio_sample_rate = audio_sample_rate
         @video_preset = video_preset
         @video_profile = video_profile
         @frame_rate = frame_rate
@@ -321,6 +339,7 @@ module FFMPEG
 
           map media.audio_mapping_id do
             audio_bit_rate preset.audio_bit_rate
+            audio_sample_rate preset.audio_sample_rate
           end
         end
       end

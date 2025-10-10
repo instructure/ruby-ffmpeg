@@ -1,3 +1,10 @@
+== 8.1.0-beta.4 2025-10-10
+
+Improvements:
+* Added audio sample rate adjustment to built-in presets.
+* Audio sample rates now work similarly to frame rates - when the input has a lower sample rate than the target, the closest standard sample rate is used.
+* Standard audio sample rates supported: 8000, 11025, 16000, 22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000 Hz.
+
 == 8.1.0-beta.3 2025-09-30
 
 Improvements:

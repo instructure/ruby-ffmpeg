@@ -16,6 +16,10 @@ module FFMPEG
   #  args.to_s # "-map 0:v:0 -c:v:0 libx264 -r 30"
   class CommandArgs < RawCommandArgs
     STANDARD_FRAME_RATES = [12, 24, 25, 30, 50, 60, 90, 120, 240].freeze
+    STANDARD_AUDIO_SAMPLE_RATES = [
+      8000, 11_025, 16_000, 22_050, 32_000, 44_100,
+      48_000, 88_200, 96_000, 176_400, 192_000
+    ].freeze
 
     class << self
       # Composes a new instance of CommandArgs with the given media.
@@ -95,12 +99,23 @@ module FFMPEG
       super(adjusted_audio_bit_rate(target_value), **kwargs)
     end
 
+    # Sets the audio sample rate to the minimum of the current audio sample rate and the target value.
+    #
+    # @param target_value [Integer] The target sample rate.
+    # @return [self]
+    def audio_sample_rate(target_value)
+      return self if target_value.nil?
+
+      super(adjusted_audio_sample_rate(target_value))
+    end
+
     # Returns the minimum of the current frame rate and the target value.
     #
     # @param target_value [Integer, Float] The target frame rate.
     # @return [Numeric]
     def adjusted_frame_rate(target_value)
       return target_value if media.frame_rate.nil?
+      return target_value if media.frame_rate <= 0
       return target_value if media.frame_rate > target_value
 
       STANDARD_FRAME_RATES.min_by { (_1 - media.frame_rate).abs }
@@ -124,6 +139,20 @@ module FFMPEG
     # @return [String]
     def adjusted_audio_bit_rate(target_value)
       min_bit_rate(media.audio_bit_rate, target_value)
+    end
+
+    # Returns the minimum of the current audio sample rate and the target value.
+    # Returns the target value if the current sample rate is nil or zero/negative.
+    # If the media sample rate is lower than the target, returns the closest standard sample rate.
+    #
+    # @param target_value [Integer] The target audio sample rate.
+    # @return [Integer]
+    def adjusted_audio_sample_rate(target_value)
+      return target_value if media.audio_sample_rate.nil?
+      return target_value if media.audio_sample_rate <= 0
+      return target_value if media.audio_sample_rate > target_value
+
+      STANDARD_AUDIO_SAMPLE_RATES.min_by { (_1 - media.audio_sample_rate).abs }
     end
 
     private
