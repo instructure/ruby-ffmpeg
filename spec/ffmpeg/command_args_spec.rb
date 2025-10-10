@@ -21,6 +21,22 @@ module FFMPEG
         end
       end
 
+      context 'when the media frame rate is zero' do
+        it 'sets the frame rate to the target value' do
+          media = instance_double(Media, frame_rate: 0)
+          args = CommandArgs.compose(media) { frame_rate 60 }
+          expect(args.to_a).to eq(%w[-r 60])
+        end
+      end
+
+      context 'when the media frame rate is negative' do
+        it 'sets the frame rate to the target value' do
+          media = instance_double(Media, frame_rate: -1)
+          args = CommandArgs.compose(media) { frame_rate 60 }
+          expect(args.to_a).to eq(%w[-r 60])
+        end
+      end
+
       context 'when the media frame rate is higher than the target value' do
         it 'sets the frame rate to the target value' do
           media = instance_double(Media, frame_rate: 60)
@@ -32,7 +48,6 @@ module FFMPEG
       context 'when the media frame rate is lower than the target value' do
         it 'sets the frame rate to the closest standard value' do
           {
-            0 => 12,
             21 => 24,
             26 => 25,
             29.94 => 30,
@@ -154,6 +169,68 @@ module FFMPEG
           media = instance_double(Media, audio_bit_rate: 128_000)
           args = CommandArgs.compose(media) { audio_bit_rate nil }
           expect(args.to_a).to eq(%w[])
+        end
+      end
+    end
+
+    describe '#audio_sample_rate' do
+      context 'when the target value is nil' do
+        it 'does not set the audio sample rate' do
+          media = instance_double(Media, audio_sample_rate: 48_000)
+          args = CommandArgs.compose(media) { audio_sample_rate nil }
+          expect(args.to_a).to eq(%w[])
+        end
+      end
+
+      context 'when the media audio sample rate is nil' do
+        it 'sets the audio sample rate to the target value' do
+          media = instance_double(Media, audio_sample_rate: nil)
+          args = CommandArgs.compose(media) { audio_sample_rate 48_000 }
+          expect(args.to_a).to eq(%w[-ar 48000])
+        end
+      end
+
+      context 'when the media audio sample rate is zero' do
+        it 'sets the audio sample rate to the target value' do
+          media = instance_double(Media, audio_sample_rate: 0)
+          args = CommandArgs.compose(media) { audio_sample_rate 48_000 }
+          expect(args.to_a).to eq(%w[-ar 48000])
+        end
+      end
+
+      context 'when the media audio sample rate is negative' do
+        it 'sets the audio sample rate to the target value' do
+          media = instance_double(Media, audio_sample_rate: -1)
+          args = CommandArgs.compose(media) { audio_sample_rate 48_000 }
+          expect(args.to_a).to eq(%w[-ar 48000])
+        end
+      end
+
+      context 'when the media audio sample rate is higher than the target value' do
+        it 'sets the audio sample rate to the target value' do
+          media = instance_double(Media, audio_sample_rate: 96_000)
+          args = CommandArgs.compose(media) { audio_sample_rate 48_000 }
+          expect(args.to_a).to eq(%w[-ar 48000])
+        end
+      end
+
+      context 'when the media audio sample rate is lower than the target value' do
+        it 'sets the audio sample rate to the closest standard value' do
+          {
+            8000 => 8000,
+            10_000 => 11_025,
+            12_000 => 11_025,
+            20_000 => 22_050,
+            44_100 => 44_100,
+            45_000 => 44_100,
+            47_000 => 48_000,
+            90_000 => 88_200,
+            100_000 => 96_000
+          }.each do |media_sample_rate, expected_value|
+            media = instance_double(Media, audio_sample_rate: media_sample_rate)
+            args = CommandArgs.compose(media) { audio_sample_rate 192_000 }
+            expect(args.to_a).to eq(%W[-ar #{expected_value}])
+          end
         end
       end
     end

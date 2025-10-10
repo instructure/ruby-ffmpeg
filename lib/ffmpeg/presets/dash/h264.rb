@@ -20,6 +20,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           frame_rate: 30,
           ld_frame_rate: 24,
           &
@@ -32,11 +33,11 @@ module FFMPEG
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
-              Presets.h264_360p(audio_bit_rate:, frame_rate:)
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate:)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -50,6 +51,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           frame_rate: 30,
           ld_frame_rate: 24,
           &
@@ -62,12 +64,12 @@ module FFMPEG
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
-              Presets.h264_480p(audio_bit_rate:, frame_rate:),
-              Presets.h264_360p(audio_bit_rate:, frame_rate:)
+              Presets.h264_480p(audio_bit_rate:, audio_sample_rate:, frame_rate:),
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate:)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -81,6 +83,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           ld_frame_rate: 24,
           sd_frame_rate: 30,
           hd_frame_rate: 30,
@@ -94,13 +97,13 @@ module FFMPEG
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
-              Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_480p(audio_bit_rate:, frame_rate: sd_frame_rate),
-              Presets.h264_360p(audio_bit_rate:, frame_rate: sd_frame_rate)
+              Presets.h264_720p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_480p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate),
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -114,6 +117,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           ld_frame_rate: 24,
           sd_frame_rate: 30,
           hd_frame_rate: 30,
@@ -127,14 +131,14 @@ module FFMPEG
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
-              Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_480p(audio_bit_rate:, frame_rate: sd_frame_rate),
-              Presets.h264_360p(audio_bit_rate:, frame_rate: sd_frame_rate)
+              Presets.h264_1080p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_720p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_480p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate),
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -148,6 +152,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           ld_frame_rate: 24,
           sd_frame_rate: 30,
           hd_frame_rate: 30,
@@ -161,15 +166,15 @@ module FFMPEG
             keyframe_interval:,
             segment_duration:,
             h264_presets: [
-              Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_480p(audio_bit_rate:, frame_rate: sd_frame_rate),
-              Presets.h264_360p(audio_bit_rate:, frame_rate: sd_frame_rate)
+              Presets.h264_1440p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_1080p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_720p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_480p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate),
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -183,6 +188,7 @@ module FFMPEG
           segment_duration: 4,
           keyframe_interval: 2,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           ld_frame_rate: 24,
           sd_frame_rate: 30,
           hd_frame_rate: 60,
@@ -197,16 +203,16 @@ module FFMPEG
             segment_duration:,
             keyframe_interval:,
             h264_presets: [
-              Presets.h264_4k(audio_bit_rate:, frame_rate: uhd_frame_rate),
-              Presets.h264_1440p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_1080p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_720p(audio_bit_rate:, frame_rate: hd_frame_rate),
-              Presets.h264_480p(audio_bit_rate:, frame_rate: sd_frame_rate),
-              Presets.h264_360p(audio_bit_rate:, frame_rate: sd_frame_rate)
+              Presets.h264_4k(audio_bit_rate:, audio_sample_rate:, frame_rate: uhd_frame_rate),
+              Presets.h264_1440p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_1080p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_720p(audio_bit_rate:, audio_sample_rate:, frame_rate: hd_frame_rate),
+              Presets.h264_480p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate),
+              Presets.h264_360p(audio_bit_rate:, audio_sample_rate:, frame_rate: sd_frame_rate)
             ],
             ld_h264_presets: [
-              Presets.h264_240p(audio_bit_rate:, frame_rate: ld_frame_rate),
-              Presets.h264_144p(audio_bit_rate:, frame_rate: ld_frame_rate)
+              Presets.h264_240p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate),
+              Presets.h264_144p(audio_bit_rate:, audio_sample_rate:, frame_rate: ld_frame_rate)
             ],
             &
           )
@@ -305,6 +311,7 @@ module FFMPEG
               # Reset the audio stream's timestamps to start from 0.
               filter Filter.new(:audio, 'asetpts', expr: 'PTS-STARTPTS')
               audio_bit_rate h264_presets.first.audio_bit_rate
+              audio_sample_rate h264_presets.first.audio_sample_rate
             end
           end
         end

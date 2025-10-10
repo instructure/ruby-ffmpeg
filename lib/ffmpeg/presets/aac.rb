@@ -12,6 +12,7 @@ module FFMPEG
         filename: '%<basename>s.m4a',
         metadata: nil,
         threads: FFMPEG.threads,
+        audio_sample_rate: 48_000,
         &
       )
         AAC.new(
@@ -19,6 +20,7 @@ module FFMPEG
           filename:,
           metadata:,
           threads:,
+          audio_sample_rate:,
           audio_bit_rate: '128k',
           &
         )
@@ -29,6 +31,7 @@ module FFMPEG
         filename: '%<basename>s.m4a',
         metadata: nil,
         threads: FFMPEG.threads,
+        audio_sample_rate: 48_000,
         &
       )
         AAC.new(
@@ -36,6 +39,7 @@ module FFMPEG
           filename:,
           metadata:,
           threads:,
+          audio_sample_rate:,
           audio_bit_rate: '192k',
           &
         )
@@ -46,6 +50,7 @@ module FFMPEG
         filename: '%<basename>s.m4a',
         metadata: nil,
         threads: FFMPEG.threads,
+        audio_sample_rate: 48_000,
         &
       )
         AAC.new(
@@ -53,6 +58,7 @@ module FFMPEG
           filename:,
           metadata:,
           threads:,
+          audio_sample_rate:,
           audio_bit_rate: '320k',
           &
         )
@@ -61,7 +67,7 @@ module FFMPEG
 
     # Preset to encode AAC audio files.
     class AAC < Preset
-      attr_reader :threads, :audio_bit_rate
+      attr_reader :threads, :audio_bit_rate, :audio_sample_rate
 
       # @param name [String] The name of the preset.
       # @param filename [String] The filename format of the output.
@@ -74,10 +80,12 @@ module FFMPEG
         metadata: nil,
         threads: FFMPEG.threads,
         audio_bit_rate: '128k',
+        audio_sample_rate: 48_000,
         &
       )
         @threads = threads
         @audio_bit_rate = audio_bit_rate
+        @audio_sample_rate = audio_sample_rate
         preset = self
 
         super(name:, filename:, metadata:) do
@@ -92,6 +100,7 @@ module FFMPEG
 
           map media.audio_mapping_id do
             audio_bit_rate preset.audio_bit_rate
+            audio_sample_rate preset.audio_sample_rate
           end
         end
       end

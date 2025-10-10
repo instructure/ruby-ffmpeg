@@ -14,6 +14,7 @@ module FFMPEG
           metadata: nil,
           threads: FFMPEG.threads,
           segment_duration: 4,
+          audio_sample_rate: 48_000,
           &
         )
           AAC.new(
@@ -22,6 +23,7 @@ module FFMPEG
             metadata:,
             threads:,
             segment_duration:,
+            audio_sample_rate:,
             audio_bit_rate: '128k',
             &
           )
@@ -33,6 +35,7 @@ module FFMPEG
           metadata: nil,
           threads: FFMPEG.threads,
           segment_duration: 4,
+          audio_sample_rate: 48_000,
           &
         )
           AAC.new(
@@ -41,6 +44,7 @@ module FFMPEG
             metadata:,
             threads:,
             segment_duration:,
+            audio_sample_rate:,
             audio_bit_rate: '192k',
             &
           )
@@ -52,6 +56,7 @@ module FFMPEG
           metadata: nil,
           threads: FFMPEG.threads,
           segment_duration: 4,
+          audio_sample_rate: 48_000,
           &
         )
           AAC.new(
@@ -60,6 +65,7 @@ module FFMPEG
             metadata:,
             threads:,
             segment_duration:,
+            audio_sample_rate:,
             audio_bit_rate: '320k',
             &
           )
@@ -68,7 +74,7 @@ module FFMPEG
 
       # Preset to encode DASH AAC audio files.
       class AAC < DASH
-        attr_reader :audio_bit_rate
+        attr_reader :audio_bit_rate, :audio_sample_rate
 
         # @param name [String] The name of the preset.
         # @param filename [String] The filename format of the output.
@@ -82,9 +88,11 @@ module FFMPEG
           threads: FFMPEG.threads,
           segment_duration: 4,
           audio_bit_rate: '128k',
+          audio_sample_rate: 48_000,
           &
         )
           @audio_bit_rate = audio_bit_rate
+          @audio_sample_rate = audio_sample_rate
           preset = self
 
           super(
@@ -102,6 +110,7 @@ module FFMPEG
 
             map media.audio_mapping_id do
               audio_bit_rate preset.audio_bit_rate
+              audio_sample_rate preset.audio_sample_rate
             end
           end
         end
