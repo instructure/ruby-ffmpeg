@@ -530,8 +530,10 @@ module FFMPEG
     # @param inargs [Array<String>] The arguments to pass before the input.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [Process::Status]
-    def ffmpeg_execute(*args, inargs: [], status: nil, reporters: nil, timeout: nil, &block)
-      FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, status:, reporters:, timeout:, &block)
+    def ffmpeg_execute(*args, inargs: [], status: nil, reporters: nil, timeout: nil,
+                       spawn: nil, &block)
+      FFMPEG.ffmpeg_execute(*inargs, '-i', path, *args, status:, reporters:, timeout:,
+                                                        spawn:, &block)
     end
 
     # Execute a ffmpeg command with the media as input
@@ -541,8 +543,9 @@ module FFMPEG
     # @param inargs [Array<String>] The arguments to pass before the input.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [Process::Status]
-    def ffmpeg_execute!(*args, inargs: [], status: nil, reporters: nil, timeout: nil, &block)
-      ffmpeg_execute(*args, inargs:, status:, reporters:, timeout:, &block).assert!
+    def ffmpeg_execute!(*args, inargs: [], status: nil, reporters: nil, timeout: nil,
+                        spawn: nil, &block)
+      ffmpeg_execute(*args, inargs:, status:, reporters:, timeout:, spawn:, &block).assert!
     end
   end
 end

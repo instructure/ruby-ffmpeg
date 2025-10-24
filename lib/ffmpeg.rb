@@ -113,10 +113,12 @@ module FFMPEG
     # Safely captures the standard output and the standard error of the ffmpeg command.
     #
     # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @param spawn [Hash] Options hash forwarded to Process.spawn
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
-    def ffmpeg_capture3(*args)
+    def ffmpeg_capture3(*args, spawn: nil)
       logger.debug(self) { "ffmpeg -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.capture3(ffmpeg_binary, '-y', *args)
+      spawn ||= {}
+      FFMPEG::IO.capture3(ffmpeg_binary, '-y', *args, **spawn)
     end
 
     # Starts a new ffmpeg process with the given arguments.
@@ -125,29 +127,33 @@ module FFMPEG
     # to the specified block.
     #
     # @param args [Array<String>] The arguments to pass to ffmpeg.
+    # @param spawn [Hash] Options hash forwarded to Process.spawn
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
     # @yieldparam wait_thr (+Thread+) The child process thread.
     # @return [Process::Status, Array<IO, Thread>]
-    def ffmpeg_popen3(*args, &)
+    def ffmpeg_popen3(*args, spawn: nil, &)
       logger.debug(self) { "ffmpeg -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.popen3(ffmpeg_binary, '-y', *args, &)
+      spawn ||= {}
+      FFMPEG::IO.popen3(ffmpeg_binary, '-y', *args, **spawn, &)
     end
 
     # Execute a ffmpeg command.
     #
     # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @param reporters [Array<Class<FFMPEG::Reporters::Output>>] The reporters to use to parse the output.
+    # @param spawn [Hash] Options hash forwarded to Process.spawn
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Status]
-    def ffmpeg_execute(*args, status: nil, reporters: nil, timeout: nil)
+    def ffmpeg_execute(*args, status: nil, reporters: nil, timeout: nil, spawn: nil)
       status ||= FFMPEG::Status.new
       reporters ||= self.reporters
       timeout ||= self.timeout
 
       status.bind! do
-        ffmpeg_popen3(*args) do |_stdin, stdout, stderr, wait_thr|
+        spawn ||= {}
+        ffmpeg_popen3(*args, spawn:) do |_stdin, stdout, stderr, wait_thr|
           Timeout.timeout(timeout) do
             stderr.each(chomp: true) do |line|
               reporter = reporters.find { |r| r.match?(line) }
@@ -171,10 +177,11 @@ module FFMPEG
     #
     # @param args [Array<String>] The arguments to pass to ffmpeg.
     # @param reporters [Array<FFMPEG::Reporters::Output>] The reporters to use to parse the output.
+    # @param spawn [Hash] Options hash forwarded to Process.spawn
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Status]
-    def ffmpeg_execute!(*args, status: nil, reporters: nil, timeout: nil)
-      ffmpeg_execute(*args, status:, reporters:, timeout:).assert!
+    def ffmpeg_execute!(*args, status: nil, reporters: nil, timeout: nil, spawn: nil)
+      ffmpeg_execute(*args, status:, reporters:, timeout:, spawn:).assert!
     end
 
     # Get the path to the ffprobe binary.
@@ -205,9 +212,10 @@ module FFMPEG
     # @param args [Array<String>] The arguments to pass to ffprobe.
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
-    def ffprobe_capture3(*args)
+    def ffprobe_capture3(*args, spawn: nil)
       logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.capture3(ffprobe_binary, '-y', *args)
+      spawn ||= {}
+      FFMPEG::IO.capture3(ffprobe_binary, '-y', *args, **spawn)
     end
 
     # Starts a new ffprobe process with the given arguments.
@@ -216,14 +224,16 @@ module FFMPEG
     # to the specified block.
     #
     # @param args [Array<String>] The arguments to pass to ffprobe.
+    # @param spawn [Hash] Options hash forwarded to Process.spawn
     # @yieldparam stdin (+IO+) The standard input stream.
     # @yieldparam stdout (+FFMPEG::IO+) The standard output stream.
     # @yieldparam stderr (+FFMPEG::IO+) The standard error stream.
     # @return [Process::Status, Array<IO, Thread>]
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
-    def ffprobe_popen3(*args, &)
+    def ffprobe_popen3(*args, spawn: nil, &)
       logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.popen3(ffprobe_binary, '-y', *args, &)
+      spawn ||= {}
+      FFMPEG::IO.popen3(ffprobe_binary, '-y', *args, **spawn, &)
     end
 
     # Cross-platform way of finding an executable in the $PATH.

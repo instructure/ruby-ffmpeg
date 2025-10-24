@@ -61,6 +61,13 @@ describe FFMPEG do
       expect(status.exitstatus).to eq(0)
     end
 
+    it 'forwards spawn parameter to popen3' do
+      spawn = { chdir: '/tmp/test' }
+
+      expect(FFMPEG::IO).to receive(:popen3).with(any_args, chdir: '/tmp/test')
+      described_class.ffmpeg_execute(spawn:)
+    end
+
     context 'when ffmpeg hangs' do
       before do
         described_class.ffmpeg_binary = fixture_file('bin/mock-ffmpeg')
