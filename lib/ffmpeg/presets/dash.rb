@@ -31,6 +31,7 @@ module FFMPEG
           use_template 1
           use_timeline 1
           segment_duration preset.segment_duration
+          avoid_negative_ts 'make_zero'
 
           muxing_flags 'frag_keyframe+empty_moov+default_base_moof'
           map_chapters '-1'

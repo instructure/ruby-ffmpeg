@@ -583,6 +583,21 @@ module FFMPEG
       stream_arg('q', value, stream_type: 'v', **kwargs)
     end
 
+    # Sets the video sync in the command arguments.
+    # This is used to synchronize audio and video streams.
+    #
+    # @param value [String, Numeric] The video sync to set.
+    # @return [self]
+    #
+    # @example
+    #  args = FFMPEG::RawCommandArgs.compose do
+    #    video_sync 'cfr'
+    #  end
+    #  args.to_s # "-vsync cfr"
+    def video_sync(value)
+      arg('vsync', value)
+    end
+
     # Sets a frame rate in the command arguments.
     #
     # @param value [String, Numeric] The frame rate to set.

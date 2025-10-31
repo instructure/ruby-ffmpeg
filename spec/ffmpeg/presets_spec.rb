@@ -45,7 +45,7 @@ module FFMPEG
         end
       ),
       PresetTest.new(
-        name: 'DASH H.264 4K 30 FPS',
+        name: 'DASH H.264 4K 60 FPS',
         preset: Presets::DASH.h264_4k,
         assert: lambda do |media|
           expect(media.path).to match(/\.mpd\z/)
@@ -54,11 +54,17 @@ module FFMPEG
           expect(media.audio_streams.length).to be(1)
           expect(media.width).to be(1080)
           expect(media.height).to be(1920)
-          expect(media.frame_rate).to eq(Rational(60))
+          # FFmpeg 4 has a bug where avg_frame_rate is 0/0 for our DASH manifests
+          expect(media.frame_rate).to eq(Rational(60)) unless FFMPEG.ffmpeg_version?('4.')
           expect(media.audio_bit_rate).to be_within(15_000).of(128_000)
           expect(media.video_streams.map(&:width)).to eq([1080, 720, 480, 360])
           expect(media.video_streams.map(&:height)).to eq([1920, 1280, 854, 640])
-          expect(media.video_streams.map(&:frame_rate)).to eq([Rational(60), Rational(60), Rational(30), Rational(30)])
+          # FFmpeg 4 has a bug where avg_frame_rate is 0/0 for our DASH manifests
+          unless FFMPEG.ffmpeg_version?('4.')
+            expect(media.video_streams.map(&:frame_rate)).to(
+              eq([Rational(60), Rational(60), Rational(30), Rational(30)])
+            )
+          end
         end
       ),
       PresetTest.new(

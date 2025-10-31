@@ -15,6 +15,7 @@ module FFMPEG
           threads: FFMPEG.threads,
           segment_duration: 4,
           audio_sample_rate: 48_000,
+          audio_channels: 2,
           &
         )
           AAC.new(
@@ -24,6 +25,7 @@ module FFMPEG
             threads:,
             segment_duration:,
             audio_sample_rate:,
+            audio_channels:,
             audio_bit_rate: '128k',
             &
           )
@@ -36,6 +38,7 @@ module FFMPEG
           threads: FFMPEG.threads,
           segment_duration: 4,
           audio_sample_rate: 48_000,
+          audio_channels: 2,
           &
         )
           AAC.new(
@@ -45,6 +48,7 @@ module FFMPEG
             threads:,
             segment_duration:,
             audio_sample_rate:,
+            audio_channels:,
             audio_bit_rate: '192k',
             &
           )
@@ -57,6 +61,7 @@ module FFMPEG
           threads: FFMPEG.threads,
           segment_duration: 4,
           audio_sample_rate: 48_000,
+          audio_channels: 2,
           &
         )
           AAC.new(
@@ -66,6 +71,7 @@ module FFMPEG
             threads:,
             segment_duration:,
             audio_sample_rate:,
+            audio_channels:,
             audio_bit_rate: '320k',
             &
           )
@@ -74,12 +80,14 @@ module FFMPEG
 
       # Preset to encode DASH AAC audio files.
       class AAC < DASH
-        attr_reader :audio_bit_rate, :audio_sample_rate
+        attr_reader :audio_bit_rate, :audio_sample_rate, :audio_channels
 
         # @param name [String] The name of the preset.
         # @param filename [String] The filename format of the output.
         # @param metadata [Object] The metadata to associate with the preset.
         # @param audio_bit_rate [String] The audio bit rate to use.
+        # @param audio_sample_rate [Integer] The audio sample rate to use.
+        # @param audio_channels [Integer, nil] The number of audio channels to use (nil to preserve source).
         # @yield The block to execute to compose the command arguments.
         def initialize(
           name: nil,
@@ -89,10 +97,12 @@ module FFMPEG
           segment_duration: 4,
           audio_bit_rate: '128k',
           audio_sample_rate: 48_000,
+          audio_channels: 2,
           &
         )
           @audio_bit_rate = audio_bit_rate
           @audio_sample_rate = audio_sample_rate
+          @audio_channels = audio_channels
           preset = self
 
           super(
@@ -111,6 +121,7 @@ module FFMPEG
             map media.audio_mapping_id do
               audio_bit_rate preset.audio_bit_rate
               audio_sample_rate preset.audio_sample_rate
+              audio_channels preset.audio_channels if preset.audio_channels
             end
           end
         end

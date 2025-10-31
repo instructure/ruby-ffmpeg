@@ -100,6 +100,7 @@ module FFMPEG
       end
 
       @ffmpeg_binary = path
+      @ffmpeg_version = nil
     end
 
     # Get the path to the ffmpeg binary.
@@ -108,6 +109,27 @@ module FFMPEG
     # @return [String]
     def ffmpeg_binary
       @ffmpeg_binary ||= which('ffmpeg')
+    end
+
+    # Get the version of the ffmpeg binary.
+    #
+    # @return [String] The version string (e.g., "4.4.6", "8.0")
+    def ffmpeg_version
+      @ffmpeg_version ||= begin
+        stdout, = FFMPEG::IO.capture3(ffmpeg_binary, '-version')
+        stdout[/ffmpeg version (\d+\.\d+(?:\.\d+)?)/i, 1]
+      end
+    end
+
+    # Check if the ffmpeg version matches the given pattern.
+    #
+    # @param pattern [String, Regexp] The version pattern to match.
+    # @return [Boolean] True if the ffmpeg version matches the pattern, false otherwise.
+    def ffmpeg_version?(pattern)
+      return false unless ffmpeg_version
+      return pattern.match?(ffmpeg_version) if pattern.is_a?(Regexp)
+
+      ffmpeg_version.start_with?(pattern.to_s)
     end
 
     # Safely captures the standard output and the standard error of the ffmpeg command.
@@ -198,6 +220,28 @@ module FFMPEG
       end
 
       @ffprobe_binary = path
+      @ffprobe_version = nil
+    end
+
+    # Get the version of the ffprobe binary.
+    #
+    # @return [String] The version string (e.g., "4.4.6", "8.0")
+    def ffprobe_version
+      @ffprobe_version ||= begin
+        stdout, = FFMPEG::IO.capture3(ffprobe_binary, '-version')
+        stdout[/ffprobe version (\d+\.\d+(?:\.\d+)?)/i, 1]
+      end
+    end
+
+    # Check if the ffprobe version matches the given pattern.
+    #
+    # @param pattern [String, Regexp] The version pattern to match.
+    # @return [Boolean] True if the ffprobe version matches the pattern, false otherwise.
+    def ffprobe_version?(pattern)
+      return false unless ffprobe_version
+      return pattern.match?(ffprobe_version) if pattern.is_a?(Regexp)
+
+      ffprobe_version.start_with?(pattern.to_s)
     end
 
     # Safely captures the standard output and the standard error of the ffmpeg command.

@@ -6,13 +6,17 @@ describe FFMPEG do
   before do
     described_class.instance_variable_set(:@logger, nil)
     described_class.instance_variable_set(:@ffmpeg_binary, nil)
+    described_class.instance_variable_set(:@ffmpeg_version, nil)
     described_class.instance_variable_set(:@ffprobe_binary, nil)
+    described_class.instance_variable_set(:@ffprobe_version, nil)
   end
 
   after do
     described_class.instance_variable_set(:@logger, nil)
     described_class.instance_variable_set(:@ffmpeg_binary, nil)
+    described_class.instance_variable_set(:@ffmpeg_version, nil)
     described_class.instance_variable_set(:@ffprobe_binary, nil)
+    described_class.instance_variable_set(:@ffprobe_version, nil)
   end
 
   describe '.logger' do
@@ -44,10 +48,69 @@ describe FFMPEG do
       expect(described_class.ffmpeg_binary).to eq('/path/to/ffmpeg')
     end
 
+    it 'clears the cached ffmpeg version' do
+      expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(true)
+      described_class.instance_variable_set(:@ffmpeg_version, '4.4.6')
+      described_class.ffmpeg_binary = '/path/to/ffmpeg'
+      expect(described_class.instance_variable_get(:@ffmpeg_version)).to be_nil
+    end
+
     context 'when the assigned value is not executable' do
       it 'raises an error' do
         expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(false)
         expect { described_class.ffmpeg_binary = '/path/to/ffmpeg' }.to raise_error(Errno::ENOENT)
+      end
+    end
+  end
+
+  describe '.ffmpeg_version' do
+    it 'returns the version string from ffmpeg binary' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .with(described_class.ffmpeg_binary, '-version')
+        .and_return(['ffmpeg version 4.4.6 Copyright (c) 2000-2025 the FFmpeg developers', ''])
+
+      expect(described_class.ffmpeg_version).to eq('4.4.6')
+    end
+
+    it 'caches the version' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .once
+        .with(described_class.ffmpeg_binary, '-version')
+        .and_return(['ffmpeg version 8.0 Copyright (c) 2000-2025 the FFmpeg developers', ''])
+
+      described_class.ffmpeg_version
+      expect(described_class.ffmpeg_version).to eq('8.0')
+    end
+
+    it 'handles versions with different formats' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .with(described_class.ffmpeg_binary, '-version')
+        .and_return(['ffmpeg version 5.1.2-static https://johnvansickle.com/ffmpeg/', ''])
+
+      expect(described_class.ffmpeg_version).to eq('5.1.2')
+    end
+  end
+
+  describe '.ffmpeg_version?' do
+    context 'when the version matches the pattern' do
+      it 'returns true' do
+        expect(FFMPEG::IO).to receive(:capture3)
+          .with(described_class.ffmpeg_binary, '-version')
+          .and_return(['ffmpeg version 4.4.6 Copyright (c) 2000-2025 the FFmpeg developers', ''])
+
+        expect(described_class.ffmpeg_version?('4.4')).to be true
+        expect(described_class.ffmpeg_version?(/^4\.\d+/)).to be true
+      end
+    end
+
+    context 'when the version does not match the pattern' do
+      it 'returns false' do
+        expect(FFMPEG::IO).to receive(:capture3)
+          .with(described_class.ffmpeg_binary, '-version')
+          .and_return(['ffmpeg version 4.4.6 Copyright (c) 2000-2025 the FFmpeg developers', ''])
+
+        expect(described_class.ffmpeg_version?('5')).to be false
+        expect(described_class.ffmpeg_version?(/^5/)).to be false
       end
     end
   end
@@ -144,10 +207,69 @@ describe FFMPEG do
       expect(described_class.ffprobe_binary).to eq '/path/to/ffprobe'
     end
 
+    it 'clears the cached ffprobe version' do
+      expect(File).to receive(:executable?).with('/path/to/ffprobe').and_return(true)
+      described_class.instance_variable_set(:@ffprobe_version, '4.4.6')
+      described_class.ffprobe_binary = '/path/to/ffprobe'
+      expect(described_class.instance_variable_get(:@ffprobe_version)).to be_nil
+    end
+
     context 'when the assigned value is not executable' do
       it 'raises an error' do
         expect(File).to receive(:executable?).with('/path/to/ffprobe').and_return(false)
         expect { described_class.ffprobe_binary = '/path/to/ffprobe' }.to raise_error(Errno::ENOENT)
+      end
+    end
+  end
+
+  describe '.ffprobe_version' do
+    it 'returns the version string from ffprobe binary' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .with(described_class.ffprobe_binary, '-version')
+        .and_return(['ffprobe version 4.4.6 Copyright (c) 2007-2025 the FFmpeg developers', ''])
+
+      expect(described_class.ffprobe_version).to eq('4.4.6')
+    end
+
+    it 'caches the version' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .once
+        .with(described_class.ffprobe_binary, '-version')
+        .and_return(['ffprobe version 8.0 Copyright (c) 2007-2025 the FFmpeg developers', ''])
+
+      described_class.ffprobe_version
+      expect(described_class.ffprobe_version).to eq('8.0')
+    end
+
+    it 'handles versions with different formats' do
+      expect(FFMPEG::IO).to receive(:capture3)
+        .with(described_class.ffprobe_binary, '-version')
+        .and_return(['ffprobe version 5.1.2-static https://johnvansickle.com/ffmpeg/', ''])
+
+      expect(described_class.ffprobe_version).to eq('5.1.2')
+    end
+  end
+
+  describe '.ffprobe_version?' do
+    context 'when the version matches the pattern' do
+      it 'returns true' do
+        expect(FFMPEG::IO).to receive(:capture3)
+          .with(described_class.ffprobe_binary, '-version')
+          .and_return(['ffprobe version 4.4.6 Copyright (c) 2007-2025 the FFmpeg developers', ''])
+
+        expect(described_class.ffprobe_version?('4.4')).to be true
+        expect(described_class.ffprobe_version?(/^4\.\d+/)).to be true
+      end
+    end
+
+    context 'when the version does not match the pattern' do
+      it 'returns false' do
+        expect(FFMPEG::IO).to receive(:capture3)
+          .with(described_class.ffprobe_binary, '-version')
+          .and_return(['ffprobe version 4.4.6 Copyright (c) 2007-2025 the FFmpeg developers', ''])
+
+        expect(described_class.ffprobe_version?('5')).to be false
+        expect(described_class.ffprobe_version?(/^5/)).to be false
       end
     end
   end
