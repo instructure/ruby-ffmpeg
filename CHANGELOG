@@ -1,3 +1,11 @@
+== 8.1.0-beta.5 2025-10-31
+
+Improvements:
+* Added audio channels configuration to built-in presets.
+
+Fixes:
+* Fixed MPEG-DASH timing issues by using avoid_negative_ts 'make_zero' instead of the asetpts filter.
+
 == 8.1.0-beta.4 2025-10-10
 
 Improvements:
