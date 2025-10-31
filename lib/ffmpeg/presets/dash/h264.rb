@@ -308,10 +308,9 @@ module FFMPEG
             end
 
             map media.audio_mapping_id do
-              # Reset the audio stream's timestamps to start from 0.
-              filter Filter.new(:audio, 'asetpts', expr: 'PTS-STARTPTS')
               audio_bit_rate h264_presets.first.audio_bit_rate
               audio_sample_rate h264_presets.first.audio_sample_rate
+              audio_channels h264_presets.first.audio_channels if h264_presets.first.audio_channels
             end
           end
         end
