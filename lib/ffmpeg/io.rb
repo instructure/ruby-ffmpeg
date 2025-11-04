@@ -30,15 +30,15 @@ module FFMPEG
         io.extend(FFMPEG::IO)
       end
 
-      def capture3(*cmd)
-        *io, status = Open3.capture3(*cmd)
+      def capture3(*cmd, **spawn_opts)
+        *io, status = Open3.capture3(*cmd, **spawn_opts)
         io.each(&method(:encode!))
         [*io, status]
       end
 
-      def popen3(*cmd, &block)
+      def popen3(*cmd, **spawn_opts, &block)
         if block_given?
-          Open3.popen3(*cmd) do |*io, wait_thr|
+          Open3.popen3(*cmd, **spawn_opts) do |*io, wait_thr|
             io = io.map(&method(:extend!))
             block.call(*io, wait_thr)
           rescue StandardError
@@ -47,7 +47,7 @@ module FFMPEG
             raise
           end
         else
-          *io, wait_thr = Open3.popen3(*cmd)
+          *io, wait_thr = Open3.popen3(*cmd, **spawn_opts)
           io = io.map(&method(:extend!))
           [*io, wait_thr]
         end

@@ -625,7 +625,7 @@ module FFMPEG
         block = proc {}
 
         expect(status).to receive(:assert!).and_return(status)
-        expect(subject).to receive(:ffmpeg_execute).with(*args, inargs:, status:, reporters:, timeout:,
+        expect(subject).to receive(:ffmpeg_execute).with(*args, inargs:, status:, reporters:, timeout:, spawn: nil,
                                                          &block).and_return(status)
         expect(subject.ffmpeg_execute!(*args, inargs:, status:, reporters:, timeout:, &block)).to be(status)
       end
