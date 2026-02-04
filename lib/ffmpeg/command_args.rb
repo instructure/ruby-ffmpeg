@@ -109,6 +109,16 @@ module FFMPEG
       super(adjusted_audio_sample_rate(target_value))
     end
 
+    # Sets the audio channels to the minimum of the current audio channels and the target value.
+    #
+    # @param target_value [Integer] The target audio channels.
+    # @return [self]
+    def audio_channels(target_value)
+      return self if target_value.nil?
+
+      super(adjusted_audio_channels(target_value))
+    end
+
     # Returns the minimum of the current frame rate and the target value.
     #
     # @param target_value [Integer, Float] The target frame rate.
@@ -153,6 +163,20 @@ module FFMPEG
       return target_value if media.audio_sample_rate > target_value
 
       STANDARD_AUDIO_SAMPLE_RATES.min_by { (_1 - media.audio_sample_rate).abs }
+    end
+
+    # Returns the minimum of the current audio channels and the target value.
+    # Returns the target value if the current audio channels is nil or zero/negative.
+    # If the media audio channels is lower than the target, returns the current audio channels.
+    #
+    # @param target_value [Integer] The target audio channels.
+    # @return [Integer]
+    def adjusted_audio_channels(target_value)
+      return target_value if media.audio_channels.nil?
+      return target_value if media.audio_channels <= 0
+      return target_value if media.audio_channels > target_value
+
+      media.audio_channels
     end
 
     private
