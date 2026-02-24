@@ -250,8 +250,8 @@ module FFMPEG
     # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_capture3(*args)
-      logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.capture3(ffprobe_binary, '-y', *args)
+      logger.debug(self) { "ffprobe #{Shellwords.join(args)}" }
+      FFMPEG::IO.capture3(ffprobe_binary, *args)
     end
 
     # Starts a new ffprobe process with the given arguments.
@@ -266,8 +266,8 @@ module FFMPEG
     # @return [Process::Status, Array<IO, Thread>]
     # @raise [Errno::ENOENT] If the ffprobe binary cannot be found.
     def ffprobe_popen3(*args, &)
-      logger.debug(self) { "ffprobe -y #{Shellwords.join(args)}" }
-      FFMPEG::IO.popen3(ffprobe_binary, '-y', *args, &)
+      logger.debug(self) { "ffprobe #{Shellwords.join(args)}" }
+      FFMPEG::IO.popen3(ffprobe_binary, *args, &)
     end
 
     # Cross-platform way of finding an executable in the $PATH.
