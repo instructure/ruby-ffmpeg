@@ -1,3 +1,8 @@
+== 8.1.1 2026-02-24
+
+Fixes:
+* FFmpeg v8 no longer allows `-y` as an argument for `ffprobe`.
+
 == 8.1.0 2026-02-04
 
 Improvements:
