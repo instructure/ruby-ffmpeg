@@ -143,8 +143,8 @@ module FFMPEG
       status
     end
 
-    # Transcodes the media file using the preset configurations
-    # and raise an error if the subprocess did not finish successfully.
+    # Transcodes the media file using the preset configurations,
+    # raising an error if the subprocess did not finish successfully.
     #
     # @param media [String, Pathname, URI, FFMPEG::Media] The media file to transcode.
     # @param output_path [String, Pathname] The output path to save the transcoded files.

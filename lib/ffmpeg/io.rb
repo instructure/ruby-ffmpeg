@@ -10,32 +10,62 @@ module FFMPEG
     class << self
       attr_writer :timeout, :encoding
 
+      # Returns the I/O timeout in seconds. Defaults to 30.
+      #
+      # @return [Integer]
       def timeout
         return @timeout if defined?(@timeout)
 
         @timeout = 30
       end
 
+      # Returns the I/O encoding. Defaults to UTF-8.
+      #
+      # @return [Encoding]
       def encoding
         @encoding ||= Encoding::UTF_8
       end
 
+      # Encodes the string in-place using the configured encoding,
+      # replacing invalid and undefined characters.
+      #
+      # @param string [String] The string to encode.
+      # @return [String]
       def encode!(string)
         string.encode!(encoding, invalid: :replace, undef: :replace)
       end
 
+      # Extends the given IO object with the configured timeout, encoding,
+      # and the FFMPEG::IO module.
+      #
+      # @param io [IO] The IO object to extend.
+      # @return [IO]
       def extend!(io)
         io.timeout = timeout
         io.set_encoding(encoding, invalid: :replace, undef: :replace)
         io.extend(FFMPEG::IO)
       end
 
+      # Runs the given command and captures stdout, stderr, and the process status.
+      # Encodes the output using the configured encoding.
+      #
+      # @param cmd [Array<String>] The command to run.
+      # @return [Array<String, Process::Status>] stdout, stderr, and the process status.
       def capture3(*cmd)
         *io, status = Open3.capture3(*cmd)
         io.each(&method(:encode!))
         [*io, status]
       end
 
+      # Starts the given command and yields or returns stdin, stdout, stderr, and the wait thread.
+      # Each IO stream is extended with the configured timeout and encoding.
+      #
+      # @param cmd [Array<String>] The command to run.
+      # @yieldparam stdin [IO]
+      # @yieldparam stdout [FFMPEG::IO]
+      # @yieldparam stderr [FFMPEG::IO]
+      # @yieldparam wait_thr [Thread]
+      # @return [Process::Status, Array<IO, Thread>]
       def popen3(*cmd, &block)
         if block_given?
           Open3.popen3(*cmd) do |*io, wait_thr|
@@ -54,6 +84,10 @@ module FFMPEG
       end
     end
 
+    # Iterates over each line of the IO stream, yielding each line to the block.
+    #
+    # @param chomp [Boolean] Whether to include the line separator in each yielded line.
+    # @yieldparam line [String] Each line from the stream.
     def each(chomp: false, &block)
       # We need to run this loop in a separate thread to avoid
       # errors with exit signals being sent to the main thread.

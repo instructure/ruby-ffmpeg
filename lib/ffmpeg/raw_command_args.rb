@@ -349,7 +349,7 @@ module FFMPEG
     # @param filters [Array<FFMPEG::Filter, String>] The filters to add.
     # @return [self]
     def filter_complex(*filters)
-      arg('filter_complex', filters.compact.map(&:to_s).join(';'))
+      arg('filter_complex', filters.compact.join(';'))
 
       self
     end

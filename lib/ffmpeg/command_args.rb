@@ -27,7 +27,7 @@ module FFMPEG
       #
       # @param media [FFMPEG::Media] The media to transcode.
       # @param context [Hash, nil] Additional context for composing the arguments.
-      # # @return [FFMPEG::CommandArgs] The new FFMPEG::CommandArgs object.
+      # @return [FFMPEG::CommandArgs] The new FFMPEG::CommandArgs object.
       def compose(media, context: nil, &block)
         new(media, context:).tap do |args|
           args.instance_exec(&block) if block_given?
@@ -66,7 +66,7 @@ module FFMPEG
       super(adjusted_video_bit_rate(target_value), **kwargs)
     end
 
-    # Sets the audio bit rate to the minimum of the current audio bit rate and the target value.
+    # Sets the minimum video bit rate to the minimum of the current video bit rate and the target value.
     # The target value can be an Integer or a String (e.g.: 128k or 1M).
     #
     # @param target_value [Integer, String] The target bit rate.
@@ -77,7 +77,7 @@ module FFMPEG
       super(adjusted_video_bit_rate(target_value))
     end
 
-    # Sets the audio bit rate to the minimum of the current audio bit rate and the target value.
+    # Sets the maximum video bit rate to the minimum of the current video bit rate and the target value.
     # The target value can be an Integer or a String (e.g.: 128k or 1M).
     #
     # @param target_value [Integer, String] The target bit rate.

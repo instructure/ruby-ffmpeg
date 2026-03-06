@@ -609,9 +609,7 @@ module FFMPEG
 
         expect(reports.length).to be >= 1
         expect(reports).to all(be_a(FFMPEG::Reporters::Output))
-        expect(reports.select do |report|
-          report.is_a?(FFMPEG::Reporters::Silence)
-        end.length).to be >= 1
+        expect(reports.grep(FFMPEG::Reporters::Silence).length).to be >= 1
       end
     end
 
