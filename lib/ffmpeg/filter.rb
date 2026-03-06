@@ -18,7 +18,7 @@ module FFMPEG
       # @param filters [Array<Filter>] The filters to join.
       # @return [String] The filter chain.
       def join(*filters)
-        filters.compact.map(&:to_s).join(',')
+        filters.compact.join(',')
       end
     end
 

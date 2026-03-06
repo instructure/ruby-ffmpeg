@@ -80,6 +80,30 @@ module FFMPEG
       load! if load
     end
 
+    # Remuxes the media file to the given output path via stream copy.
+    # If the initial stream copy fails and the video codec supports Annex B
+    # extraction, it falls back to extracting raw streams and re-muxing with
+    # a corrected frame rate.
+    #
+    # @param output_path [String, Pathname] The output path for the remuxed file.
+    # @param timeout [Integer, nil] Timeout in seconds for each ffmpeg command.
+    # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
+    # @return [FFMPEG::Transcoder::Status]
+    def remux(output_path, timeout: nil, &block)
+      Remuxer.new(timeout:).process(self, output_path, &block)
+    end
+
+    # Remuxes the media file to the given output path via stream copy,
+    # raising an error if the remux fails.
+    #
+    # @param output_path [String, Pathname] The output path for the remuxed file.
+    # @param timeout [Integer, nil] Timeout in seconds for each ffmpeg command.
+    # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
+    # @return [FFMPEG::Transcoder::Status]
+    def remux!(output_path, timeout: nil, &block)
+      remux(output_path, timeout:, &block).assert!
+    end
+
     # Load the metadata of the multimedia file.
     #
     # @return [Boolean]

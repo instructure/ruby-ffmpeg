@@ -55,6 +55,16 @@ describe FFMPEG do
       expect(described_class.instance_variable_get(:@ffmpeg_version)).to be_nil
     end
 
+    context 'when the assigned value is nil' do
+      it 'clears the ffmpeg binary and version' do
+        described_class.instance_variable_set(:@ffmpeg_binary, '/path/to/ffmpeg')
+        described_class.instance_variable_set(:@ffmpeg_version, '4.4.6')
+        described_class.ffmpeg_binary = nil
+        expect(described_class.instance_variable_get(:@ffmpeg_binary)).to be_nil
+        expect(described_class.instance_variable_get(:@ffmpeg_version)).to be_nil
+      end
+    end
+
     context 'when the assigned value is not executable' do
       it 'raises an error' do
         expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(false)
@@ -212,6 +222,16 @@ describe FFMPEG do
       described_class.instance_variable_set(:@ffprobe_version, '4.4.6')
       described_class.ffprobe_binary = '/path/to/ffprobe'
       expect(described_class.instance_variable_get(:@ffprobe_version)).to be_nil
+    end
+
+    context 'when the assigned value is nil' do
+      it 'clears the ffprobe binary and version' do
+        described_class.instance_variable_set(:@ffprobe_binary, '/path/to/ffprobe')
+        described_class.instance_variable_set(:@ffprobe_version, '4.4.6')
+        described_class.ffprobe_binary = nil
+        expect(described_class.instance_variable_get(:@ffprobe_binary)).to be_nil
+        expect(described_class.instance_variable_get(:@ffprobe_version)).to be_nil
+      end
     end
 
     context 'when the assigned value is not executable' do

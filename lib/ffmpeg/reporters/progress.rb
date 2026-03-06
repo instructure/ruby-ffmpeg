@@ -6,8 +6,15 @@ module FFMPEG
   module Reporters
     # Represents the progress of an encoding operation.
     class Progress < Output
+      # Returns false — progress lines are not logged.
+      #
+      # @return [Boolean]
       def self.log? = false
 
+      # Returns true if the line is a progress line.
+      #
+      # @param line [String]
+      # @return [Boolean]
       def self.match?(line)
         line.match?(/^\s*(?:size|time|frame)=/)
       end

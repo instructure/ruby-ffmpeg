@@ -29,6 +29,7 @@ require_relative 'ffmpeg/presets/dash/aac'
 require_relative 'ffmpeg/presets/dash/h264'
 require_relative 'ffmpeg/presets/h264'
 require_relative 'ffmpeg/raw_command_args'
+require_relative 'ffmpeg/remuxer'
 require_relative 'ffmpeg/reporters/output'
 require_relative 'ffmpeg/reporters/progress'
 require_relative 'ffmpeg/reporters/silence'
@@ -90,16 +91,15 @@ module FFMPEG
 
     # Set the path to the ffmpeg binary.
     #
-    # @param path [String]
-    # @return [String]
+    # @param path [String, Pathname, nil] The path to the ffmpeg binary.
+    # @return [String, nil]
     # @raise [Errno::ENOENT] If the ffmpeg binary is not an executable.
     def ffmpeg_binary=(path)
-      if path.is_a?(String) && !File.executable?(path)
-        raise Errno::ENOENT,
-              "The ffmpeg binary, '#{path}', is not executable"
+      if !path.nil? && !File.executable?(path.to_s)
+        raise Errno::ENOENT, "The ffmpeg binary, '#{path}', is not executable"
       end
 
-      @ffmpeg_binary = path
+      @ffmpeg_binary = path&.to_s
       @ffmpeg_version = nil
     end
 
@@ -211,15 +211,15 @@ module FFMPEG
     # Set the path of the ffprobe binary.
     # Can be useful if you need to specify a path such as /usr/local/bin/ffprobe.
     #
-    # @param [String] path
-    # @return [String]
+    # @param [String, Pathname, nil] path The path to the ffprobe binary.
+    # @return [String, nil]
     # @raise [Errno::ENOENT] If the ffprobe binary is not an executable.
     def ffprobe_binary=(path)
-      if path.is_a?(String) && !File.executable?(path)
+      if !path.nil? && !File.executable?(path.to_s)
         raise Errno::ENOENT, "The ffprobe binary, '#{path}', is not executable"
       end
 
-      @ffprobe_binary = path
+      @ffprobe_binary = path&.to_s
       @ffprobe_version = nil
     end
 
@@ -268,6 +268,40 @@ module FFMPEG
     def ffprobe_popen3(*args, &)
       logger.debug(self) { "ffprobe #{Shellwords.join(args)}" }
       FFMPEG::IO.popen3(ffprobe_binary, *args, &)
+    end
+
+    # Get the path to the exiftool binary.
+    # Returns nil if exiftool is not found in the PATH.
+    #
+    # @return [String, nil]
+    def exiftool_binary
+      return @exiftool_binary if defined?(@exiftool_binary)
+
+      @exiftool_binary = which('exiftool')
+    rescue Errno::ENOENT
+      @exiftool_binary = nil
+    end
+
+    # Set the path to the exiftool binary.
+    #
+    # @param path [String, Pathname, nil] The path to the exiftool binary.
+    # @return [String, nil]
+    # @raise [Errno::ENOENT] If the exiftool binary is not an executable.
+    def exiftool_binary=(path)
+      if !path.nil? && !File.executable?(path.to_s)
+        raise Errno::ENOENT, "The exiftool binary, '#{path}', is not executable"
+      end
+
+      @exiftool_binary = path&.to_s
+    end
+
+    # Safely captures the standard output and the standard error of the exiftool command.
+    #
+    # @param args [Array<String>] The arguments to pass to exiftool.
+    # @return [Array<String, Process::Status>] The standard output, the standard error, and the process status.
+    def exiftool_capture3(*args)
+      logger.debug(self) { "exiftool #{Shellwords.join(args)}" }
+      FFMPEG::IO.capture3(exiftool_binary, *args)
     end
 
     # Cross-platform way of finding an executable in the $PATH.
