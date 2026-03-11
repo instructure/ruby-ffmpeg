@@ -1,3 +1,8 @@
+== 8.2.0 2026-03-11
+
+Improvements:
+* Added remuxer to clone media with clean containers within milliseconds.
+
 == 8.1.1 2026-02-24
 
 Fixes:
