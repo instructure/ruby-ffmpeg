@@ -85,22 +85,42 @@ module FFMPEG
     # extraction, it falls back to extracting raw streams and re-muxing with
     # a corrected frame rate.
     #
-    # @param output_path [String, Pathname] The output path for the remuxed file.
+    # @param output_path [String, Pathname, nil] The output path for the remuxed file.
+    #  Tries an inline replacement for nil value.
     # @param timeout [Integer, nil] Timeout in seconds for each ffmpeg command.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Transcoder::Status]
-    def remux(output_path, timeout: nil, &block)
-      Remuxer.new(timeout:).process(self, output_path, &block)
+    def remux(output_path = nil, timeout: nil, &block)
+      return Remuxer.new(timeout:).process(self, output_path, &block) if output_path
+      raise ArgumentError if remote?
+
+      Dir.mktmpdir do |tmpdir|
+        output_path = File.join(tmpdir, File.basename(@path))
+
+        status = Remuxer.new(timeout:).process(self, output_path, &block)
+
+        if status.success?
+          File.unlink @path
+          File.mv output_path, @path
+          if @loaded
+            @loaded = false
+            load!
+          end
+        end
+
+        status
+      end
     end
 
     # Remuxes the media file to the given output path via stream copy,
     # raising an error if the remux fails.
     #
-    # @param output_path [String, Pathname] The output path for the remuxed file.
+    # @param output_path [String, Pathname, nil] The output path for the remuxed file.
+    #  Tries an inline replacement for nil value.
     # @param timeout [Integer, nil] Timeout in seconds for each ffmpeg command.
     # @yield [report] Reports from the ffmpeg command (see FFMPEG::Reporters).
     # @return [FFMPEG::Transcoder::Status]
-    def remux!(output_path, timeout: nil, &block)
+    def remux!(output_path = nil, timeout: nil, &block)
       remux(output_path, timeout:, &block).assert!
     end
 
