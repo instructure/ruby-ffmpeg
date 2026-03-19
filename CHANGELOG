@@ -1,3 +1,6 @@
+== 8.3.0 2026-03-19
+* Introduce inline remux when there's no output path provided
+
 == 8.2.0 2026-03-11
 
 Improvements:
