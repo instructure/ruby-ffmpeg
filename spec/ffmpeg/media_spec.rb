@@ -597,24 +597,23 @@ module FFMPEG
     describe '#remux' do
       context 'with an output_path' do
         let(:output_path) { tmp_file(ext: 'mp4') }
-        let(:remuxer) { instance_double(Remuxer) }
-        let(:status) { instance_double(Transcoder::Status) }
 
-        before do
-          allow(Remuxer).to receive(:new).and_return(remuxer)
-          allow(remuxer).to receive(:process).and_return(status)
-        end
+        it 'remuxes the media to the output path' do
+          status = subject.remux(output_path)
 
-        it 'delegates to a new Remuxer with the given output path' do
-          expect(Remuxer).to receive(:new).with(timeout: nil).and_return(remuxer)
-          expect(remuxer).to receive(:process).with(subject, output_path).and_return(status)
-          expect(subject.remux(output_path)).to be(status)
+          expect(status).to be_a(Transcoder::Status)
+          expect(status.success?).to be(true)
+          expect(File.exist?(output_path)).to be(true)
+          expect(File.size(output_path)).to be > 0
         end
 
         it 'passes the timeout option to the Remuxer' do
+          remuxer = instance_double(Remuxer)
           timeout = rand(999)
+
+          allow(remuxer).to receive(:process).and_return(instance_double(Transcoder::Status))
           expect(Remuxer).to receive(:new).with(timeout: timeout).and_return(remuxer)
-          expect(remuxer).to receive(:process).with(subject, output_path).and_return(status)
+
           subject.remux(output_path, timeout: timeout)
         end
       end
@@ -630,53 +629,33 @@ module FFMPEG
 
         context 'when the media is local' do
           let(:path) do
-            dst = tmp_file(ext: 'mp4')
-            FileUtils.cp(fixture_media_file('widescreen-no-audio.mp4'), dst)
-            dst
+            path = tmp_file(ext: 'mp4')
+            FileUtils.cp(fixture_media_file('landscape@4k60.mp4'), path)
+            path
           end
 
-          let(:remuxer) { instance_double(Remuxer) }
+          it 'remuxes the file in place' do
+            original_duration = subject.duration
+            status = subject.remux
 
-          before do
-            allow(Remuxer).to receive(:new).and_return(remuxer)
-          end
-
-          context 'when the remux succeeds' do
-            let(:remux_status) { instance_double(Transcoder::Status, success?: true) }
-
-            before do
-              allow(remuxer).to receive(:process).and_return(remux_status)
-              allow(File).to receive(:unlink)
-              allow(File).to receive(:mv)
-            end
-
-            it 'unlinks the original file and moves the remuxed output in its place' do
-              expect(File).to receive(:unlink).with(path)
-              expect(File).to receive(:mv).with(an_instance_of(String), path)
-              subject.remux
-            end
-
-            it 'reloads the media metadata' do
-              subject # force initialization before setting expectation
-              expect(subject).to receive(:load!).once.and_call_original
-              subject.remux
-            end
-
-            it 'returns the status' do
-              expect(subject.remux).to be(remux_status)
-            end
+            expect(status).to be_a(Transcoder::Status)
+            expect(status.success?).to be(true)
+            expect(File.exist?(path)).to be(true)
+            expect(File.size(path)).to be > 0
+            expect(subject.duration).to be_within(0.5).of(original_duration)
           end
 
           context 'when the remux fails' do
+            let(:remuxer) { instance_double(Remuxer) }
             let(:remux_status) { instance_double(Transcoder::Status, success?: false) }
 
             before do
+              allow(Remuxer).to receive(:new).and_return(remuxer)
               allow(remuxer).to receive(:process).and_return(remux_status)
             end
 
             it 'does not modify the original file' do
-              expect(File).not_to receive(:unlink)
-              expect(File).not_to receive(:mv)
+              expect(FileUtils).not_to receive(:mv)
               subject.remux
             end
 
@@ -690,25 +669,29 @@ module FFMPEG
 
     describe '#remux!' do
       context 'with an output_path' do
-        it 'calls assert! on the result of #remux' do
-          output_path = tmp_file(ext: 'mp4')
-          status = instance_double(Transcoder::Status)
+        let(:output_path) { tmp_file(ext: 'mp4') }
 
-          expect(subject).to receive(:remux).with(output_path, timeout: nil).and_return(status)
-          expect(status).to receive(:assert!).and_return(status)
+        it 'remuxes the media and returns the status' do
+          status = subject.remux!(output_path)
 
-          subject.remux!(output_path)
+          expect(status).to be_a(Transcoder::Status)
+          expect(status.success?).to be(true)
         end
       end
 
       context 'without an output_path' do
-        it 'calls assert! on the result of #remux without output_path' do
-          status = instance_double(Transcoder::Status)
+        let(:path) do
+          dst = tmp_file(ext: 'mp4')
+          FileUtils.cp(fixture_media_file('widescreen-no-audio.mp4'), dst)
+          dst
+        end
 
-          expect(subject).to receive(:remux).with(nil, timeout: nil).and_return(status)
-          expect(status).to receive(:assert!).and_return(status)
+        it 'remuxes the file in place and returns the status' do
+          status = subject.remux!
 
-          subject.remux!
+          expect(status).to be_a(Transcoder::Status)
+          expect(status.success?).to be(true)
+          expect(File.exist?(path)).to be(true)
         end
       end
     end
