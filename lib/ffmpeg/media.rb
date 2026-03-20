@@ -100,8 +100,8 @@ module FFMPEG
         status = Remuxer.new(timeout:).process(self, output_path, &block)
 
         if status.success?
-          File.unlink @path
-          File.mv output_path, @path
+          FileUtils.mv output_path, @path
+          status.paths.map! { @path }
           if @loaded
             @loaded = false
             load!
