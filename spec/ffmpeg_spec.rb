@@ -55,6 +55,13 @@ describe FFMPEG do
       expect(described_class.instance_variable_get(:@ffmpeg_version)).to be_nil
     end
 
+    it 'clears the cached muxers' do
+      expect(File).to receive(:executable?).with('/path/to/ffmpeg').and_return(true)
+      described_class.instance_variable_set(:@muxers, Set.new(['mp4']))
+      described_class.ffmpeg_binary = '/path/to/ffmpeg'
+      expect(described_class.instance_variable_get(:@muxers)).to be_nil
+    end
+
     context 'when the assigned value is nil' do
       it 'clears the ffmpeg binary and version' do
         described_class.instance_variable_set(:@ffmpeg_binary, '/path/to/ffmpeg')
@@ -122,6 +129,22 @@ describe FFMPEG do
         expect(described_class.ffmpeg_version?('5')).to be false
         expect(described_class.ffmpeg_version?(/^5/)).to be false
       end
+    end
+  end
+
+  describe '.muxers' do
+    before { described_class.instance_variable_set(:@muxers, nil) }
+    after  { described_class.instance_variable_set(:@muxers, nil) }
+
+    it 'returns a set of available muxer names' do
+      expect(described_class.muxers).to be_a(Set)
+      expect(described_class.muxers).to include('mp4', 'matroska', 'webm')
+    end
+
+    it 'caches the result' do
+      expect(described_class).to receive(:ffmpeg_capture3).once.and_call_original
+      described_class.muxers
+      described_class.muxers
     end
   end
 

@@ -594,6 +594,62 @@ module FFMPEG
       end
     end
 
+    describe '#extname' do
+      context 'when the media is an MP4' do
+        it 'returns .mp4' do
+          expect(subject.extname).to eq('.mp4')
+        end
+      end
+
+      context 'when the media is a MOV (QuickTime)' do
+        let(:path) { fixture_media_file('rotated@0.mov') }
+
+        it 'returns .mov' do
+          expect(subject.extname).to eq('.mov')
+        end
+      end
+
+      context 'when the media is a WAV' do
+        let(:path) { fixture_media_file('hello.wav') }
+
+        it 'returns .wav' do
+          expect(subject.extname).to eq('.wav')
+        end
+      end
+
+      context 'when the media is an MP3' do
+        let(:path) { fixture_media_file('napoleon.mp3') }
+
+        it 'returns .mp3' do
+          expect(subject.extname).to eq('.mp3')
+        end
+      end
+
+      context 'when the media is a Matroska container with H.264 video named .webm' do
+        let(:path) { fixture_media_file('mkvh264.webm') }
+
+        it 'returns .mkv' do
+          expect(subject.extname).to eq('.mkv')
+        end
+      end
+
+      context 'when the media is a WebM container with VP9 video and Opus audio' do
+        let(:path) { fixture_media_file('landscape@smol.webm') }
+
+        it 'returns .webm' do
+          expect(subject.extname).to eq('.webm')
+        end
+      end
+
+      context 'when the media is a Matroska container with VP9 video and AAC audio named .webm' do
+        let(:path) { fixture_media_file('mkvaac.webm') }
+
+        it 'returns .mkv' do
+          expect(subject.extname).to eq('.mkv')
+        end
+      end
+    end
+
     describe '#remux' do
       context 'with an output_path' do
         let(:output_path) { tmp_file(ext: 'mp4') }
@@ -662,6 +718,23 @@ module FFMPEG
             it 'returns the status' do
               expect(subject.remux).to be(remux_status)
             end
+          end
+        end
+
+        context 'when the media is incorrectly named' do
+          let(:path) do
+            path = tmp_file(ext: 'webm')
+            FileUtils.cp(fixture_media_file('mkvh264.webm'), path)
+            path
+          end
+
+          it 'remuxes the file in place' do
+            status = subject.remux
+
+            expect(status).to be_a(Transcoder::Status)
+            expect(status.success?).to be(true)
+            expect(File.exist?(path)).to be(true)
+            expect(File.size(path)).to be > 0
           end
         end
       end
