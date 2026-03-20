@@ -101,6 +101,7 @@ module FFMPEG
 
       @ffmpeg_binary = path&.to_s
       @ffmpeg_version = nil
+      @muxers = nil
     end
 
     # Get the path to the ffmpeg binary.
@@ -130,6 +131,16 @@ module FFMPEG
       return pattern.match?(ffmpeg_version) if pattern.is_a?(Regexp)
 
       ffmpeg_version.start_with?(pattern.to_s)
+    end
+
+    # Get the set of available muxer names for the ffmpeg binary.
+    #
+    # @return [Set<String>]
+    def muxers
+      @muxers ||= begin
+        stdout, = ffmpeg_capture3('-muxers', '-v', 'quiet')
+        stdout.scan(/^\s*E\S*\s+(\S+)/).flatten.to_set
+      end
     end
 
     # Safely captures the standard output and the standard error of the ffmpeg command.

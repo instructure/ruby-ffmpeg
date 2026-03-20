@@ -34,6 +34,9 @@ module FFMPEG
   #  media.load!
   #  media.video? # => true
   class Media
+    WEBM_CODEC_NAMES = Set.new(%w[vp8 vp9 av1 opus vorbis]).freeze
+    private_constant :WEBM_CODEC_NAMES
+
     # Raised if media metadata cannot be loaded.
     class LoadError < Error
       attr_reader :output
@@ -67,6 +70,41 @@ module FFMPEG
                          :format_name, :format_long_name,
                          :start_time, :bit_rate, :duration
 
+    # Returns the file extension that best represents this media's container format.
+    #
+    # @return [String] e.g. ".mp4", ".mkv", ".webm", ".ts", ".m3u8"
+    autoload def extname
+      case format_name
+      when /\Adash\b/   then '.mpd'
+      when /\bhls\b/    then '.m3u8'
+      when /\bmpegts\b/ then '.ts'
+      when /\b(mov|mp4)\b/
+        case major_brand
+        when /\Aqt\b/i  then '.mov'
+        when /\Am4a\b/i then '.m4a'
+        when /\Am4v\b/i then '.m4v'
+        when /\Am4s\b/i then '.m4s'
+        else                 '.mp4'
+        end
+      when /\bmatroska\b/
+        if streams
+           .select { _1.video? || _1.audio? }
+           .reject(&:attached_pic?)
+           .all? { WEBM_CODEC_NAMES.include?(_1.codec_name) }
+          '.webm'
+        else
+          '.mkv'
+        end
+      else
+        muxer =
+          format_name
+          .split(',')
+          .find { FFMPEG.muxers.include?(_1) }
+          .then { _1 || format_name.split(',').first }
+        ".#{muxer}"
+      end
+    end
+
     # @param path [String, Pathname, URI] The local path or remote URL to a multimedia file.
     # @param ffprobe_args [Array<String>] Additional arguments to pass to ffprobe.
     # @param load [Boolean] Whether to load the metadata immediately.
@@ -95,7 +133,7 @@ module FFMPEG
       raise ArgumentError if remote?
 
       Dir.mktmpdir do |tmpdir|
-        output_path = File.join(tmpdir, File.basename(@path))
+        output_path = File.join(tmpdir, "#{File.basename(@path, '.*')}#{extname}")
 
         status = Remuxer.new(timeout:).process(self, output_path, &block)
 
