@@ -1,4 +1,12 @@
+== 8.3.1 2026-03-20
+
+Fixes:
+* Resolve no method error (`File.mv`) in `FFMPEG::Media#remux`.
+* Resolve `FFMPEG::Transcoder::Status#success?` inconsistency when using remux-replace.
+
 == 8.3.0 2026-03-19
+
+Improvements:
 * Introduce inline remux when there's no output path provided
 
 == 8.2.0 2026-03-11
