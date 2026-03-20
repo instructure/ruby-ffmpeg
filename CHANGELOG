@@ -1,3 +1,10 @@
+== 8.4.0 2026-03-20
+
+Improvements:
+* Added `FFMPEG::Media#extname` to detect the best file extension for a media's container format.
+* Added `FFMPEG.muxers` to retrieve the set of available muxer names.
+* Remux now uses `extname` to produce correct media even for incorrectly named input.
+
 == 8.3.1 2026-03-20
 
 Fixes:
