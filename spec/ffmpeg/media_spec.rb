@@ -609,6 +609,16 @@ module FFMPEG
         end
       end
 
+      context 'when the media is an old-style QuickTime MOV without an ftyp box' do
+        let(:path) { fixture_media_file('rotated@0.mov') }
+
+        before { allow(subject).to receive(:major_brand).and_return(nil) }
+
+        it 'returns .mov' do
+          expect(subject.extname).to eq('.mov')
+        end
+      end
+
       context 'when the media is a WAV' do
         let(:path) { fixture_media_file('hello.wav') }
 
