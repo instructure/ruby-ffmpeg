@@ -1,3 +1,8 @@
+== 8.4.2 2026-04-01
+
+Fixes:
+* Correctly detect the file extension for old-style MOV files (no ftyp box).
+
 == 8.4.1 2026-04-01
 
 Fixes:
