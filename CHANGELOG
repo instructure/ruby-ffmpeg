@@ -1,3 +1,8 @@
+== 8.4.1 2026-04-01
+
+Fixes:
+* Correctly detect the file extension for `asf_o`, `live_flv`, `mpegvideo` and `mpegtsraw` formats.
+
 == 8.4.0 2026-03-20
 
 Improvements:
