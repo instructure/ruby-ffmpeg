@@ -77,7 +77,10 @@ module FFMPEG
       case format_name
       when /\Adash\b/   then '.mpd'
       when /\bhls\b/    then '.m3u8'
-      when /\bmpegts\b/ then '.ts'
+      when /\bmpegts(raw)?\b/ then '.ts'
+      when /\bmpegvideo\b/ then '.mpg'
+      when /\blive_flv\b/  then '.flv'
+      when /\basf_o\b/     then '.asf'
       when /\b(mov|mp4)\b/
         case major_brand
         when /\Aqt\b/i  then '.mov'
