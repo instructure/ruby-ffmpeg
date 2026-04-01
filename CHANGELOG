@@ -1,3 +1,8 @@
+== 8.4.3 2026-04-02
+
+Fixes:
+* Correctly detect 3gp and 3g2 file extensions (and some others).
+
 == 8.4.2 2026-04-01
 
 Fixes:
