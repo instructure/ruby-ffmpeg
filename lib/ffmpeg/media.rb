@@ -83,11 +83,11 @@ module FFMPEG
       when /\basf_o\b/     then '.asf'
       when /\b(mov|mp4)\b/
         case major_brand
-        when /\Aqt\b/i  then '.mov'
-        when /\Am4a\b/i then '.m4a'
-        when /\Am4v\b/i then '.m4v'
-        when /\Am4s\b/i then '.m4s'
-        else                 '.mp4'
+        when nil, /\Aqt\b/i then '.mov'
+        when /\Am4a\b/i     then '.m4a'
+        when /\Am4v\b/i     then '.m4v'
+        when /\Am4s\b/i     then '.m4s'
+        else                     '.mp4'
         end
       when /\bmatroska\b/
         if streams
