@@ -115,6 +115,13 @@ module FFMPEG
       codec_type == :audio
     end
 
+    # Whether the stream is an audio or video stream.
+    #
+    # @return [Boolean]
+    def av?
+      video? || audio?
+    end
+
     # Whether the stream is marked as default.
     #
     # @return [Boolean]

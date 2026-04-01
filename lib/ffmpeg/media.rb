@@ -78,25 +78,54 @@ module FFMPEG
       when /\Adash\b/   then '.mpd'
       when /\bhls\b/    then '.m3u8'
       when /\bmpegts(raw)?\b/ then '.ts'
-      when /\bmpegvideo\b/ then '.mpg'
-      when /\blive_flv\b/  then '.flv'
-      when /\basf_o\b/     then '.asf'
+      when /\bmpeg(video\b|\z)/ then '.mpg'
+      when /\blive_flv\b/ then '.flv'
+      when /\basf\b/
+        if video?
+          '.wmv'
+        elsif audio?
+          '.wma'
+        else
+          '.asf'
+        end
       when /\b(mov|mp4)\b/
         case major_brand
         when nil, /\Aqt\b/i then '.mov'
         when /\Am4a\b/i     then '.m4a'
         when /\Am4v\b/i     then '.m4v'
         when /\Am4s\b/i     then '.m4s'
-        else                     '.mp4'
+        when /\A3g2/i       then '.3g2'
+        when /\A3gp/i       then '.3gp'
+        when /\Af4v\b/i     then '.f4v'
+        when /\Af4p\b/i     then '.f4p'
+        when /\Af4a\b/i     then '.f4a'
+        when /\Af4b\b/i     then '.f4b'
+        when /\Aavi[fs]\b/i then '.avif'
+        else
+          if include_codec_name?('h263', 'amr_nb')
+            '.3gp'
+          else
+            '.mp4'
+          end
         end
       when /\bmatroska\b/
         if streams
-           .select { _1.video? || _1.audio? }
+           .select(&:av?)
            .reject(&:attached_pic?)
            .all? { WEBM_CODEC_NAMES.include?(_1.codec_name) }
           '.webm'
         else
           '.mkv'
+        end
+      when /\bogg\b/
+        if video_streams?
+          '.ogv'
+        elsif include_codec_name?('opus')
+          '.opus'
+        elsif include_codec_name?('speex')
+          '.spx'
+        else
+          '.ogg'
         end
       else
         muxer =
@@ -236,6 +265,20 @@ module FFMPEG
     # @return [Boolean]
     autoload def valid?
       @valid
+    end
+
+    # Whether the media contains any of the specified codec names.
+    #
+    # @return [Boolean]
+    autoload def include_codec_name?(*codec_names)
+      self.codec_names.any? { codec_names.include?(_1) }
+    end
+
+    # Returns the set of all codec names used in the media's streams.
+    #
+    # @return [Set<String>]
+    autoload def codec_names
+      @codec_names ||= streams.map(&:codec_name).compact.to_set
     end
 
     # Returns the major brand of the media (if any).

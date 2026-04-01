@@ -62,6 +62,32 @@ module FFMPEG
       end
     end
 
+    describe '#av?' do
+      context 'when the codec type is video' do
+        let(:metadata) { { codec_type: 'video' } }
+
+        it 'returns true' do
+          expect(subject.av?).to be(true)
+        end
+      end
+
+      context 'when the codec type is audio' do
+        let(:metadata) { { codec_type: 'audio' } }
+
+        it 'returns true' do
+          expect(subject.av?).to be(true)
+        end
+      end
+
+      context 'when the codec type is not video or audio' do
+        let(:metadata) { { codec_type: 'subtitle' } }
+
+        it 'returns false' do
+          expect(subject.av?).to be(false)
+        end
+      end
+    end
+
     describe '#default?' do
       context 'when marked as default' do
         let(:metadata) { { disposition: { default: 1 } } }
