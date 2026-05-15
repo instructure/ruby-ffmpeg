@@ -127,6 +127,11 @@ module FFMPEG
         else
           '.ogg'
         end
+      when /\bjpeg_pipe\b/ then '.jpg'
+      when /\bpng_pipe\b/  then '.png'
+      when /\bwebp_pipe\b/ then '.webp'
+      when /\btiff_pipe\b/ then '.tiff'
+      when /\bbmp_pipe\b/  then '.bmp'
       else
         muxer =
           format_name
