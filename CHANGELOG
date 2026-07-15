@@ -1,3 +1,8 @@
+== 8.5.0 2026-07-16
+
+Improvements:
+* Add `base_frame_rate` (r_frame_rate), `cfr?` and `vfr?` methods to both `FFMPEG::Media` and `FFMPEG::Stream` to detect variable or constant frame rate.
+
 == 8.4.5 2026-07-02
 
 Improvements:

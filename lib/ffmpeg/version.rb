@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module FFMPEG
-  VERSION = '8.4.5'
+  VERSION = '8.5.0'
 end
