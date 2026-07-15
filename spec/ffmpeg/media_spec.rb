@@ -441,6 +441,9 @@ module FFMPEG
       color_primaries: 'bt709',
       color_transfer: 'bt709',
       frame_rate: Rational(60 / 1),
+      base_frame_rate: Rational(60 / 1),
+      cfr?: true,
+      vfr?: false,
       frames: 213,
       video_index: 0,
       video_mapping_index: 0,
@@ -465,6 +468,18 @@ module FFMPEG
             expect(subject.public_send(method)).to match(value)
           else
             expect(subject.public_send(method)).to eq(value)
+          end
+        end
+      end
+    end
+
+    %i[base_frame_rate cfr? vfr?].each do |method|
+      describe "##{method}" do
+        context 'when the media has no video streams' do
+          let(:path) { fixture_media_file('hello.wav') }
+
+          it 'returns nil' do
+            expect(subject.public_send(method)).to be(nil)
           end
         end
       end

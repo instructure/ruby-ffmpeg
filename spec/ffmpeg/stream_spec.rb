@@ -237,5 +237,105 @@ module FFMPEG
         end
       end
     end
+
+    describe '#cfr?' do
+      context 'when the codec type is not video' do
+        let(:metadata) { { codec_type: 'audio', r_frame_rate: '1011/1000', avg_frame_rate: '1/1' } }
+
+        it 'returns false' do
+          expect(subject.cfr?).to be(false)
+        end
+      end
+
+      context 'when the base_frame_rate is nil' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '0/0', avg_frame_rate: '30/1' } }
+
+        it 'returns true' do
+          expect(subject.cfr?).to be(true)
+        end
+      end
+
+      context 'when the avg_frame_rate is nil' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '30/1', avg_frame_rate: '0/0' } }
+
+        it 'returns true' do
+          expect(subject.cfr?).to be(true)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are equal' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '30/1', avg_frame_rate: '30/1' } }
+
+        it 'returns true' do
+          expect(subject.cfr?).to be(true)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are within the tolerance' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '101/100', avg_frame_rate: '1/1' } }
+
+        it 'returns true' do
+          expect(subject.cfr?).to be(true)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are beyond the tolerance' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '1011/1000', avg_frame_rate: '1/1' } }
+
+        it 'returns false' do
+          expect(subject.cfr?).to be(false)
+        end
+      end
+    end
+
+    describe '#vfr?' do
+      context 'when the codec type is not video' do
+        let(:metadata) { { codec_type: 'audio', r_frame_rate: '1011/1000', avg_frame_rate: '1/1' } }
+
+        it 'returns false' do
+          expect(subject.vfr?).to be(false)
+        end
+      end
+
+      context 'when the base_frame_rate is nil' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '0/0', avg_frame_rate: '30/1' } }
+
+        it 'returns false' do
+          expect(subject.vfr?).to be(false)
+        end
+      end
+
+      context 'when the avg_frame_rate is nil' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '30/1', avg_frame_rate: '0/0' } }
+
+        it 'returns false' do
+          expect(subject.vfr?).to be(false)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are equal' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '30/1', avg_frame_rate: '30/1' } }
+
+        it 'returns false' do
+          expect(subject.vfr?).to be(false)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are within the tolerance' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '101/100', avg_frame_rate: '1/1' } }
+
+        it 'returns false' do
+          expect(subject.vfr?).to be(false)
+        end
+      end
+
+      context 'when the base_frame_rate and avg_frame_rate are beyond the tolerance' do
+        let(:metadata) { { codec_type: 'video', r_frame_rate: '1011/1000', avg_frame_rate: '1/1' } }
+
+        it 'returns true' do
+          expect(subject.vfr?).to be(true)
+        end
+      end
+    end
   end
 end

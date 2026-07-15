@@ -276,7 +276,7 @@ module FFMPEG
     #
     # @return [Boolean]
     autoload def include_codec_name?(*codec_names)
-      self.codec_names.any? { codec_names.include?(_1) }
+      self.codec_names.intersect?(codec_names)
     end
 
     # Returns the set of all codec names used in the media's streams.
@@ -461,9 +461,16 @@ module FFMPEG
 
     # Returns the frame rate (avg_frame_rate) of the default video stream (if any).
     #
-    # @return [Float, nil]
+    # @return [Rational, nil]
     autoload def frame_rate
       default_video_stream&.frame_rate
+    end
+
+    # Returns the base frame rate (r_frame_rate) of the default video stream (if any).
+    #
+    # @return [Rational, nil]
+    autoload def base_frame_rate
+      default_video_stream&.base_frame_rate
     end
 
     # Returns the number of frames of the default video stream (if any).
@@ -471,6 +478,20 @@ module FFMPEG
     # @return [Integer, nil]
     autoload def frames
       default_video_stream&.frames
+    end
+
+    # Returns whether the default video stream is constant frame rate (CFR).
+    #
+    # @return [Boolean, nil]
+    autoload def cfr?
+      default_video_stream&.cfr?
+    end
+
+    # Returns whether the default video stream is variable frame rate (VFR).
+    #
+    # @return [Boolean, nil]
+    autoload def vfr?
+      default_video_stream&.vfr?
     end
 
     # Returns the index of the default video stream (if any).
