@@ -3,12 +3,15 @@
 module FFMPEG
   # The Stream class represents a multimedia stream in a file.
   class Stream
+    VFR_TOLERANCE = 0.01
+
     attr_reader :metadata,
                 :id, :index, :profile, :tags,
                 :codec_name, :codec_long_name, :codec_tag, :codec_tag_string, :codec_type,
                 :raw_width, :raw_height, :coded_width, :coded_height,
                 :raw_sample_aspect_ratio, :raw_display_aspect_ratio, :rotation,
-                :pixel_format, :color_range, :color_space, :color_primaries, :color_transfer, :field_order, :frame_rate,
+                :pixel_format, :color_range, :color_space, :color_primaries, :color_transfer, :field_order,
+                :frame_rate, :base_frame_rate,
                 :sample_rate, :sample_fmt, :channels, :channel_layout,
                 :start_time, :bit_rate, :duration, :frames, :overview
 
@@ -51,6 +54,9 @@ module FFMPEG
       @color_primaries = metadata[:color_primaries]
       @color_transfer = metadata[:color_transfer]
       @field_order = metadata[:field_order]
+      unless metadata[:r_frame_rate].nil? || metadata[:r_frame_rate] == '0/0'
+        @base_frame_rate = Rational(metadata[:r_frame_rate])
+      end
       unless metadata[:avg_frame_rate].nil? || metadata[:avg_frame_rate] == '0/0'
         @frame_rate = Rational(metadata[:avg_frame_rate])
       end
@@ -214,6 +220,21 @@ module FFMPEG
 
       @sample_aspect_ratio = calculate_aspect_ratio(@raw_sample_aspect_ratio)
       @sample_aspect_ratio ||= Rational(1)
+    end
+
+    # Whether the stream is constant frame rate (CFR).
+    #
+    # @return [Boolean]
+    def cfr? = video? && !vfr?
+
+    # Whether the stream is variable frame rate (VFR).
+    #
+    # @return [Boolean]
+    def vfr?
+      return false unless video?
+      return false if base_frame_rate.nil? || frame_rate.nil? || frame_rate.zero?
+
+      ((base_frame_rate - frame_rate) / frame_rate).abs > VFR_TOLERANCE
     end
 
     protected
