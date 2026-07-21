@@ -98,9 +98,10 @@ module FFMPEG
     #
     # @param media [String, Pathname, URI, FFMPEG::Media] The media file to transcode.
     # @param output_path [String, Pathname] The output path to save the transcoded files.
+    # @param chdir [String, Pathname] Change the ffmpeg working directory
     # @yield The block to execute to report the transcoding process.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
-    def process(media, output_path, &)
+    def process(media, output_path, chdir: nil, &)
       status = nil
 
       attempts = 0
@@ -126,11 +127,13 @@ module FFMPEG
         end
 
         inargs = CommandArgs.compose(media, context:, &@compose_inargs).to_a
+        spawn = chdir ? { chdir: } : {}
         status = media.ffmpeg_execute(
           *args,
           inargs:,
           reporters:,
           timeout:,
+          spawn:,
           status: Status.new(output_paths, checks:),
           &
         )
@@ -148,10 +151,11 @@ module FFMPEG
     #
     # @param media [String, Pathname, URI, FFMPEG::Media] The media file to transcode.
     # @param output_path [String, Pathname] The output path to save the transcoded files.
+    # @param chdir [String, Pathname] Change the ffmpeg working directory
     # @yield The block to execute to report the transcoding process.
     # @return [FFMPEG::Transcoder::Status] The status of the transcoding process.
-    def process!(media, output_path, &)
-      process(media, output_path, &).assert!
+    def process!(media, output_path, chdir: nil, &)
+      process(media, output_path, chdir:, &).assert!
     end
   end
 end

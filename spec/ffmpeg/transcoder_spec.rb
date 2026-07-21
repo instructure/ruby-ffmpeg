@@ -117,6 +117,17 @@ module FFMPEG
           expect(attempts).to eq(2)
         end
       end
+
+      it 'can run ffmpeg in a different working directory (chdir)' do
+        output_path = File.join(tmp_dir, SecureRandom.hex(4))
+        status = double(Transcoder::Status, success?: true)
+
+        expect(FFMPEG::IO).to receive(:popen3)
+          .with(any_args, chdir: tmp_dir)
+          .and_return(status)
+
+        subject.process(media, output_path, chdir: tmp_dir)
+      end
     end
 
     describe '#process!' do
@@ -127,7 +138,9 @@ module FFMPEG
         block = proc {}
 
         expect(status).to receive(:assert!).and_return(status)
-        expect(subject).to receive(:process).with(media, output_path, &block).and_return(status)
+        expect(subject).to receive(:process)
+          .with(media, output_path, chdir: nil, &block)
+          .and_return(status)
         expect(subject.process!(media, output_path, &block)).to eq(status)
       end
     end

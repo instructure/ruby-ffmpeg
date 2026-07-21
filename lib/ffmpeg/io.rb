@@ -50,9 +50,10 @@ module FFMPEG
       # Encodes the output using the configured encoding.
       #
       # @param cmd [Array<String>] The command to run.
+      # @param spawn_opts [Hash] extra arguments forwarded to Open3
       # @return [Array<String, Process::Status>] stdout, stderr, and the process status.
-      def capture3(*cmd)
-        *io, status = Open3.capture3(*cmd)
+      def capture3(*cmd, **spawn_opts)
+        *io, status = Open3.capture3(*cmd, **spawn_opts)
         io.each(&method(:encode!))
         [*io, status]
       end
@@ -61,14 +62,15 @@ module FFMPEG
       # Each IO stream is extended with the configured timeout and encoding.
       #
       # @param cmd [Array<String>] The command to run.
+      # @param spawn_opts [Hash] extra arguments forwarded to Open3
       # @yieldparam stdin [IO]
       # @yieldparam stdout [FFMPEG::IO]
       # @yieldparam stderr [FFMPEG::IO]
       # @yieldparam wait_thr [Thread]
       # @return [Process::Status, Array<IO, Thread>]
-      def popen3(*cmd, &block)
+      def popen3(*cmd, **spawn_opts, &block)
         if block_given?
-          Open3.popen3(*cmd) do |*io, wait_thr|
+          Open3.popen3(*cmd, **spawn_opts) do |*io, wait_thr|
             io = io.map(&method(:extend!))
             block.call(*io, wait_thr)
           rescue StandardError
@@ -77,7 +79,7 @@ module FFMPEG
             raise
           end
         else
-          *io, wait_thr = Open3.popen3(*cmd)
+          *io, wait_thr = Open3.popen3(*cmd, **spawn_opts)
           io = io.map(&method(:extend!))
           [*io, wait_thr]
         end
