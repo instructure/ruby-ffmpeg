@@ -481,10 +481,9 @@ module FFMPEG
       video_profile: 'High',
       video_codec_name: 'h264',
       video_bit_rate: 41_401_600,
-      # rubocop:disable Layout/LineLength
+      # rubocop:disable-next Layout/LineLength
       video_overview:
         %r{h264 \(High\) \(avc1 / 0x31637661\), yuvj420p\(pc, bt709/bt709/bt709, (progressive|unknown)\), 3840x2160 \[SAR 1:1 DAR 16:9\]},
-      # rubocop:enable Layout/LineLength
       video_tags: {
         encoder: 'Lavc61.19.100 libx264',
         handler_name: 'VideoHandle',
