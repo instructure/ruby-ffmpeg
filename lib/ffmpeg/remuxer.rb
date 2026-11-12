@@ -52,7 +52,10 @@ module FFMPEG
     def process(media, output_path, &)
       media = Media.new(media, load: false) unless media.is_a?(Media)
 
-      status = ffmpeg_copy(media, output_path, &)
+      audio_map = decodable_audio_map_patch(media)
+      copy_map = audio_map.nil? ? [] : ['-map', '0:v:0?', *audio_map]
+
+      status = ffmpeg_copy(media, *copy_map, output_path, &)
       return status if status.success?
       return status unless self.class.annexb?(media)
 
@@ -64,7 +67,7 @@ module FFMPEG
         return annexb_status unless annexb_status.success?
 
         mka_path = File.join(tmpdir, 'remux.mka')
-        mka_status = ffmpeg_copy(media, '-vn', mka_path, &)
+        mka_status = ffmpeg_copy(media, *(audio_map.nil? ? ['-vn'] : audio_map), mka_path, &)
         return mka_status unless mka_status.success?
 
         video = annexb_status.media.first
@@ -123,6 +126,22 @@ module FFMPEG
         status: Transcoder::Status.new([args.last], checks: @checks),
         &
       )
+    end
+
+    # Maps the first audio stream that ffmpeg can decode. Without an explicit
+    # map, ffmpeg picks the audio stream with the most channels, which can be an
+    # undecodable one (e.g. iPhone spatial audio, codec_name "unknown") and
+    # drops the usable stream. Returns nil if there is no decodable audio or all
+    # audio streams are decodable
+    def decodable_audio_map_patch(media)
+      decodable, undecodable = media.audio_streams.partition { decodable_audio?(_1) }
+      return nil if undecodable.empty?
+
+      decodable.first&.then { ['-map', "0:#{_1.index}"] }
+    end
+
+    def decodable_audio?(stream)
+      stream.supported? && !['', 'unknown', 'none'].include?(stream.codec_name.to_s)
     end
 
     def annexb_filter(media)
