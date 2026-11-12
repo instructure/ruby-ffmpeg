@@ -48,6 +48,36 @@ module FFMPEG
         subject.load!
       end
 
+      context 'when the media is loaded again after its streams changed' do
+        let(:old_fixture) { fixture_media_file('widescreen-multi-audio.mp4') }
+        let(:new_fixture) { fixture_media_file('widescreen-no-audio.mp4') }
+        let(:tmpdir) { Dir.mktmpdir }
+        let(:path) { File.join(tmpdir, 'media.mp4') }
+
+        before { FileUtils.cp(old_fixture, path) }
+        after { FileUtils.remove_entry(tmpdir) }
+
+        it 'resets the memoized values calculated from the streams' do
+          subject.load!
+          old_streams = subject.streams
+
+          expect(subject.audio_streams).not_to be_empty
+          expect(subject.default_audio_stream).not_to be_nil
+          expect(subject.audio_streams?).to be(true)
+
+          # The spec helper caches ffprobe output by arguments, so drop it to see the new file.
+          FFMPEG.instance_variable_set(:@ffprobe_cache, nil)
+          FileUtils.cp(new_fixture, path)
+          subject.instance_variable_set(:@loaded, false)
+          subject.load!
+
+          expect(subject.streams).not_to eq(old_streams)
+          expect(subject.audio_streams).to be_empty
+          expect(subject.default_audio_stream).to be_nil
+          expect(subject.audio_streams?).to be(false)
+        end
+      end
+
       context 'when the file does not exist' do
         let(:path) { fixture_media_file('missing.mp4') }
 
@@ -451,10 +481,9 @@ module FFMPEG
       video_profile: 'High',
       video_codec_name: 'h264',
       video_bit_rate: 41_401_600,
-      # rubocop:disable Layout/LineLength
+      # rubocop:disable-next Layout/LineLength
       video_overview:
         %r{h264 \(High\) \(avc1 / 0x31637661\), yuvj420p\(pc, bt709/bt709/bt709, (progressive|unknown)\), 3840x2160 \[SAR 1:1 DAR 16:9\]},
-      # rubocop:enable Layout/LineLength
       video_tags: {
         encoder: 'Lavc61.19.100 libx264',
         handler_name: 'VideoHandle',
