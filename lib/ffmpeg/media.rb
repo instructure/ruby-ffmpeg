@@ -228,6 +228,13 @@ module FFMPEG
 
       @size = @metadata[:format][:size].to_i
       @streams = @metadata[:streams].map { |metadata| Stream.new(metadata, stderr) }
+      %i[
+        @video_streams
+        @default_video_stream
+        @audio_streams
+        @default_audio_stream
+        @codec_names
+      ].each { remove_instance_variable(_1) if instance_variable_defined? _1 }
       @tags = @metadata[:format][:tags]
 
       @format_name = @metadata[:format][:format_name]
