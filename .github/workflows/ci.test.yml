@@ -17,14 +17,15 @@ jobs:
       fail-fast: false
       matrix:
         ruby-version: ['3.2', '3.3', '3.4']
-        ffmpeg-version: ['release', '6.0.1', '5.1.1', '4.4.1']
+        # 'system' = the ffmpeg package from the runner's Ubuntu (apt)
+        ffmpeg-version: ['system', 'release', '6.0.1', '5.1.1', '4.4.1']
 
         include:
           - ffmpeg-version: 'release'
             ffmpeg-download-path: 'releases'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -33,20 +34,28 @@ jobs:
           bundler-cache: true
           rubygems: latest
 
+      - name: Install FFMPEG from apt
+        if: matrix.ffmpeg-version == 'system'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Cache FFMPEG Package
+        if: matrix.ffmpeg-version != 'system'
         id: cache-ffmpeg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/ffmpeg.tar.xz
           key: ffmpeg-${{ matrix.ffmpeg-version }}-${{ runner.os }}.tar.xz
 
       - name: Download FFMPEG Package
-        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
+        if: matrix.ffmpeg-version != 'system' && steps.cache-ffmpeg.outputs.cache-hit != 'true'
         working-directory: /tmp
         run: |
           wget -O ffmpeg.tar.xz https://johnvansickle.com/ffmpeg/${{ matrix.ffmpeg-download-path || 'old-releases' }}/ffmpeg-${{ matrix.ffmpeg-version }}-amd64-static.tar.xz
 
-      - name: Install FFMPEG
+      - name: Install FFMPEG from static build
+        if: matrix.ffmpeg-version != 'system'
         working-directory: /tmp
         run: |
           mkdir ffmpeg
@@ -54,6 +63,11 @@ jobs:
           sudo mv ffmpeg/ffmpeg /usr/local/bin/ffmpeg
           sudo mv ffmpeg/ffprobe /usr/local/bin/ffprobe
           rm -rf ffmpeg
+
+      - name: Show FFMPEG version
+        run: |
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
 
       - name: Run RSpec
         run: bundle exec rspec
