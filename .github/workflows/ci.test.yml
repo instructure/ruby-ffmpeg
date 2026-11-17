@@ -35,7 +35,7 @@ jobs:
 
       - name: Cache FFMPEG Package
         id: cache-ffmpeg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/ffmpeg.tar.xz
           key: ffmpeg-${{ matrix.ffmpeg-version }}-${{ runner.os }}.tar.xz
